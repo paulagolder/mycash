@@ -1,7 +1,9 @@
-package org.lerot.MyCert;
+package org.lerot.MyCash;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -11,254 +13,205 @@ import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.util.List;
+import java.io.PrintWriter;
+import java.sql.Connection;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamSource;
+import javax.swing.JTextArea;
+import javax.swing.JTree;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.ScrollPaneLayout;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.DocumentResult;
-import org.dom4j.io.DocumentSource;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
-import org.lerot.MyCert.layout.VerticalPanel;
+import org.lerot.MyCash.layout.jswMenuItem;
+import org.lerot.MyCash.jswMyCashScrollPane;
+import org.lerot.mywidgets.jswButton;
+import org.lerot.mywidgets.jswHorizontalPanel;
+import org.lerot.mywidgets.jswScrollPane;
+import org.lerot.mywidgets.jswStyle;
+import org.lerot.mywidgets.jswTextArea;
+import org.lerot.mywidgets.jswVerticalPanel;
 
-public class certificateeditpanel extends JPanel implements ActionListener,
-		ItemListener, ComponentListener
+public class mainpanel extends jswHorizontalPanel
+implements ActionListener, ItemListener, ComponentListener, TreeSelectionListener, ListSelectionListener
 
 {
 	private static final long serialVersionUID = 1L;
-	JPanel cert, certframe, footnote, heading;
-	Document currentdocument;
-	documentTemplate currenttemplate;
-	private String filepath;
-	JComboBox list;
-	DefaultComboBoxModel listModel;
+	JTree mytree;
+	JPanel leftframe;
+	jswMyCashScrollPane currentdocument;
 	JMenu newcertificatemenu;
-	String savefile = "certificate.xml";
-	private PTextField savepath;
 	JScrollPane treeView;
-	PMenu newfilemenu;
-	PMenuItem loadmenu;
-	PMenu savemenu;
-	VerticalPanel certificate;
+	JScrollPane budgetView;
+	String lastclick = "";
+	//private JList<mb_account> budgetlist;
+	
+	private JList<mb_account> budgetlist;
+	private gc_account_tree_node selectedtreenode;
+	private mb_account selectedmbaccount;
+	private gc_account_tree_node topnode;
+	private mb_accounts myba;
 
-	public certificateeditpanel()
+	public mainpanel()
 	{
 		this.addComponentListener(this);
-		setName("topPane");
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-		certframe = new JPanel();
-		certframe.setBorder(utils.setborder("pink", 2));
-		certframe.setName("certframe");
-		certframe.setLayout(new BorderLayout());
-		certframe.setOpaque(false);
+		this.setBackground(Color.pink);
 
-		heading = new JPanel();
-		heading.setName("heading ");
-		heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
-		heading.setAlignmentX(CENTER_ALIGNMENT);
-		certframe.add(heading, BorderLayout.PAGE_START);
-		cert = new JPanel();
-		cert.setName("cert");
-		cert.setAlignmentX(LEFT_ALIGNMENT);
-		certframe.add(cert, BorderLayout.CENTER);
-		footnote = new JPanel();
-		footnote.setName("footnote");
-		footnote.setLayout(new BoxLayout(footnote, BoxLayout.X_AXIS));
-		footnote.setAlignmentX(CENTER_ALIGNMENT);
-		certframe.add(footnote, BorderLayout.PAGE_END);
-		certframe.setVisible(true);
-		add(certframe);
-		cert.validate();
-		certframe.validate();
-		validate();
-		savepath = new PTextField(savefile);
+		setName("mainpanel");
+
+		leftframe = new jswVerticalPanel("", false);
+		
+		MyCash_gui.MyTransactions = new gc_transactions();
+		MyCash_gui.MyTransactions.getTransactions();
+		System.out.println("Transactions:" + MyCash_gui.MyTransactions.size());
+
+		MyCash_gui.MySplits = new gc_splits(" root top");
+		MyCash_gui.MySplits.getSplits();
+
+		MyCash_gui.MyAccounts = new gc_accounts("account list");
+		MyCash_gui.MyAccounts.getAccounts();
+		MyCash_gui.topaccount = MyCash_gui.MyAccounts.getTop();
+		topnode = new gc_account_tree_node("top", MyCash_gui.topaccount);
+		topnode.transsplits.totalTransfers();
+		MyCash_gui.mybudgets = new my_budgets();
+		jswVerticalPanel treepanel = new jswVerticalPanel("Accounts",true);
+		jswHorizontalPanel buttonbar = new jswHorizontalPanel();
+		jswButton aoverview = new jswButton(this, "Overview","accountsoverview");
+		buttonbar.add(" center ", aoverview);
+		 treepanel.add(buttonbar);
+		
+		gc_account_tree treemodel = new gc_account_tree(topnode);
+		// topnode.getTranssplits().totalTransfers();
+		mytree = new JTree(treemodel);
+		mytree.addTreeSelectionListener(this);
+		jswMyCashTreeScrollPane accountframe = new jswMyCashTreeScrollPane(mytree);
+		treepanel.add(mytree);
+		leftframe.add(treepanel);
+		
+		jswVerticalPanel budgetpanel = new jswVerticalPanel("Budgets",true);
+		jswHorizontalPanel bbuttonbar = new jswHorizontalPanel();
+		jswButton boverview = new jswButton(this, "Overview","budgetsoverview");
+		bbuttonbar.add(" center ", boverview);
+		budgetpanel.add(bbuttonbar);
+	    myba = MyCash_gui.mybudgets.get(0).getAccounts();
+		myba.totalTransfers();
+		budgetlist = new JList(myba);
+		// JScrollPane listScroller = new JScrollPane(budgetlist);
+
+		//budgetlist.setBorder(jswStyle.makecborder("Budgets"));
+		budgetlist.addListSelectionListener(this);
+		jswMyCashListScrollPane budgetframe = new jswMyCashListScrollPane(budgetlist);
+		// leftframe.add(" FILLH ", budgetlist);
+		budgetpanel.add(" FILLH ", budgetframe);
+        leftframe.add(" FILLH ",budgetpanel);
+		add(" LEFT WIDTH=300 ", leftframe);
+
+		currentdocument = new jswMyCashScrollPane();
+
+		MyCash_gui.outputarea = currentdocument.textArea;
+		add(" FILLW ", currentdocument);
+		this.repaint();
+
+		revalidate();
+		gc_account_tree_walker atw = new gc_account_tree_walker(" node ", topnode);
+		atw.getAllChildren(topnode);
+		atw.sortAllChildren(topnode);
+
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e)
 	{
 		String command = e.getActionCommand();
-		// System.out.println(" action here "+command);
-		if (command.startsWith("NEWAFTER:")) {
-			String tid = command.substring(9);
-			String delims = ":";
-			String[] tokens = tid.split(delims);
-			String path = tokens[0];
-			int rowno = Integer.parseInt(tokens[1]);
-			System.out.println(" NEW " + tokens[0] + "-" + rowno);
-			// currentdocument.addElement(arg0);
-			List nodeList = currentdocument.selectNodes(path);
-			Node anode = (Node) nodeList.get(rowno);
-			Element parent = anode.getParent();
-			List list = parent.elements();
-			Element newElement = (Element) anode.clone();
-			list.add(rowno + 1, newElement);
-			
-			displaycert(currenttemplate, currentdocument);
-		}
-		if (command.startsWith("NEWBEFORE:")) {
-			String tid = command.substring(10);
-			String delims = ":";
-			String[] tokens = tid.split(delims);
-			String path = tokens[0];
-			int rowno = Integer.parseInt(tokens[1]);
-			System.out.println(" NEWBEFORE " + tokens[0] + "-" + rowno);
-			// currentdocument.addElement(arg0);
-			List nodeList = currentdocument.selectNodes(path);
-			Node anode = (Node) nodeList.get(rowno);
-			Element parent = anode.getParent();
-			List list = parent.elements();
-			Element newElement = (Element) anode.clone();
-			list.add(rowno, newElement);
-			displaycert(currenttemplate, currentdocument);
-		}
-		if (command.startsWith("DELETE:")) {
-			String tid = command.substring(7);
-			String delims = ":";
-			String[] tokens = tid.split(delims);
-			String path = tokens[0];
-			int rowno = Integer.parseInt(tokens[1]);
-			System.out.println(" DELETE " + tokens[0] + "-" + rowno);
-			List nodeList = currentdocument.selectNodes(path);
-			Node anode = (Node) nodeList.get(rowno);
-			Element parent = anode.getParent();
-			parent.remove(anode);
-			displaycert(currenttemplate, currentdocument);
-
-		}
-		if (command.startsWith("LOAD:")) {
-			String tid = command.substring(5);
-			currenttemplate = documentTemplate.findTemplate(tid);
-			currentdocument = currenttemplate.makeNewDocument();
-			displaycert(currenttemplate,currentdocument);
-			savepath.setText(currenttemplate.getSavefilename());
-		}
-		if (command.equals("saveas")) {
-			savefile = savepath.getText();
-			if (!savefile.startsWith("/"))
-				savefile = MyCert_gui.certificatepath + savefile;
-			Document doc = createDocument(savefile);
-			//String stylesheet ="freddy";
-			//Document styleddoc =  styleDocument (doc, stylesheet) ;
-			try {
-				serializetoXML(doc, savefile);
-				System.out.println(" file saved" + savefile);
-			} catch (Exception e2) {
-				System.out.println(" file problem " + e2);
-			}
-		}
-		if (command.equals("saveauton")) {
-			savefile = savepath.getText();
-			if (!savefile.startsWith("/"))
-				savefile = MyCert_gui.certificatepath + savefile;
-			Document doc = createDocument(savefile);
-			Node savepathnode = doc.selectSingleNode("Savepath");
-			if (savepathnode != null) {
-				String spath = savepathnode.getStringValue();
-				if (spath != null)
-					savefile = spath;
-			}
-			savepath.setText(savefile);
-			if (!savefile.startsWith("/"))
-				savefile = MyCert_gui.certificatepath + savefile;
-			try {
-				serializetoXML(doc, savefile);
-				System.out.println(" file saved" + savefile);
-			} catch (Exception e2) {
-				System.out.println(" file problem " + e2);
-			}
-		}
-		if (command.equals("load")) {
+		if (command.equals("Export"))
+		{
 			JFileChooser fc = new JFileChooser();
-			fc.setCurrentDirectory(new File(MyCert_gui.certificatepath));
-			fc.setAcceptAllFileFilterUsed(true);
+			fc.setDialogTitle("Specify a file to save");
 			fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-			int returnVal = fc.showOpenDialog(this);
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				File file = fc.getSelectedFile();
-				String fp = "";
-				try {
-					fp = file.getCanonicalPath();
-				} catch (Exception e4) {
-					return;
+			FileNameExtensionFilter filter = new FileNameExtensionFilter("csv", "csv");
+			fc.setFileFilter(filter);
+			if (lastclick.equalsIgnoreCase("budget"))
+			{
+				fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
+				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedmbaccount + ".csv";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					saveCSV(fileToSave.getPath(), selectedmbaccount);
 				}
-				if (fp == null || fp == "")
-					return;
-				String filename = file.getName();
-				filepath = fp;
-
-				MyCert_gui.messagepanel.display(" opening " + filepath);
-				if (filename.endsWith(".xml")) {
-					currentdocument = loadDocument(filepath);
-					informationsource newsource = new informationsource();
-					Boolean successful = newsource.loadXMLDoc(currentdocument);
-					if (successful) {
-						if (newsource.message != null) {
-							JOptionPane.showMessageDialog(
-									MyCert_gui.browserpanel, "Loading from "
-											+ filename + "\n"
-											+ newsource.message,
-									"Loading Document ",
-									JOptionPane.WARNING_MESSAGE);
-						}
-						savepath.setText(filepath);
-						currenttemplate = newsource.getTemplate();
-						// fillTemplate(currenttemplate, currentdocument);
-						displaycert(currenttemplate, currentdocument);
-					} else {
-						savepath.setText("");
-						System.out.println(newsource.message);
-						JOptionPane.showMessageDialog(MyCert_gui.browserpanel,
-								"Loading from " + filename + "\n"
-										+ newsource.message,
-								"Loading Document ",
-								JOptionPane.WARNING_MESSAGE);
-					}
-
+			} else
+			{
+				fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
+				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedtreenode.account.getName() + ".cvs";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					saveCSV(fileToSave.getPath(), selectedtreenode);
 				}
 			}
 		}
-		if (command.equals("selected")) {
-			System.out.println(" selected ");
+		if (command.equals("loadmycash"))
+		{
+			Connection com = utils.myconnect();
+			MyCash_gui.MyAccounts = new gc_accounts("my top");
+			MyCash_gui.MyAccounts.getAccounts();
+			gc_account actop = MyCash_gui.MyAccounts.getTop();
+			System.out.println(" accounts loaded :" + MyCash_gui.MyAccounts.size());
+			MyCash_gui.MyTransactions = new gc_transactions();
+			MyCash_gui.MyTransactions.getTransactions();
+			MyCash_gui.outputpanel.append(" transactions loaded :" + MyCash_gui.MyTransactions.size() + "\n");
+			MyCash_gui.MyAccounts.logtoconsol();
+			return;
 		}
-		if (command.equals("tempload")) {
-			MyCert_gui.selectCard("Template Loader");
+		if (command.equals("accountsoverview"))
+		{
+			MyCash_gui.outputpanel.setText("");
+			MyCash_gui.outputpanel.append(" Accounts :" + "\n");
+			gc_account_tree_node anode = topnode.getnode("Opening Balances");
+			MyCash_gui.outputpanel.append(anode.printOpeningSummary());
+			anode = topnode.getnode("Income");
+			MyCash_gui.outputpanel.append(anode.printIncomeSummary());
+			anode = topnode.getnode("Expenses");
+			MyCash_gui.outputpanel.append(anode.printIncomeSummary());
+			anode = topnode.getnode("Assets");
+			MyCash_gui.outputpanel.append(anode.printAssetsSummary());
+			lastclick = "accountoverview";
 		}
-		if (command.equals("user")) {
-			MyCert_gui.selectCard("User");
+		if (command.equals("budgetsoverview"))
+		{
+			MyCash_gui.outputpanel.setText("");
+			selectedmbaccount = (mb_account) budgetlist.getSelectedValue();
+			MyCash_gui.outputpanel.append(myba.budgetsummary());
+			lastclick = "budgetoverview";
 		}
-		if (command.equals("message")) {
-			MyCert_gui.selectCard("Messages");
-		}
-		if (command.equals("refreshlist")) {
-			reloadAll();
-		}
+		System.out.println(" selected " + command);
 	}
 
 	@Override
 	public void componentHidden(ComponentEvent e)
 	{
-		setMenuVisible(false);
+
 	}
 
 	@Override
@@ -270,174 +223,45 @@ public class certificateeditpanel extends JPanel implements ActionListener,
 	@Override
 	public void componentResized(ComponentEvent e)
 	{
-		if (certificate != null) {
-			Dimension dc = certificate.getSize();
-			Dimension cd = cert.getSize();
-			((VerticalPanel) certificate).updateSize();
-		}
 
 	}
 
 	@Override
 	public void componentShown(ComponentEvent e)
 	{
-		if (certificate != null) {
-			Dimension dc = certificate.getSize();
-			Dimension cd = cert.getSize();
-			((VerticalPanel) certificate).updateSize();}
+
 		repaint();
-		setMenuVisible(true);
-	}
-
-	public Document createDocument(String newsavepath)
-	{
-		this.updateDoc(currentdocument, newsavepath);
-		return currentdocument;
-	}
-
-	private void displaycert(documentTemplate acert, Document adoc)
-	{
-		heading.removeAll();
-		heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
-		JLabel name = new JLabel(acert.getName());
-		name.setFont(MyCert_gui.headingfont);
-		name.setAlignmentX(CENTER_ALIGNMENT);
-		heading.add(name);
-		heading.setBorder(utils.setborder("blue", 2));
-		cert.removeAll();
-		if (acert.getBackgroundcolor() != null) {
-			cert.setBackground(utils.color(acert.getBackgroundcolor()));
-			cert.setOpaque(true);
-		} else
-			cert.setOpaque(false);
-		cert.setLayout(new BoxLayout(cert, BoxLayout.Y_AXIS));
-		certificate = (VerticalPanel) acert.getPanelObject(adoc);
-		if (certificate != null) {
-			certificate.addComponentListener(this);
-			cert.add(certificate);
-			Dimension minSize = new Dimension(5, 100);
-			Dimension prefSize = new Dimension(5, 100);
-			Dimension maxSize = new Dimension(1200, Short.MAX_VALUE);
-			;
-			cert.setPreferredSize(maxSize);
-			certificate.setPreferredSize(maxSize);
-		}
-		footnote.removeAll();
-		footnote.setLayout(new BoxLayout(footnote, BoxLayout.X_AXIS));
-		JLabel author = new JLabel(acert.getAuthor());
-		author.setFont(MyCert_gui.footnotefont);
-		footnote.add(author);
-		footnote.add(Box.createHorizontalGlue());
-		JLabel templateid = new JLabel(acert.getTemplateID());
-		templateid.setFont(MyCert_gui.footnotefont);
-		footnote.add(templateid);
-		footnote.add(Box.createHorizontalGlue());
-		JLabel editdate = new JLabel(acert.getEditdate());
-		editdate.setFont(MyCert_gui.footnotefont);
-		footnote.add(editdate);
-		footnote.setBorder(utils.setborder("blue", 2));
-		cert.setPreferredSize(new Dimension(Short.MAX_VALUE, Short.MAX_VALUE));
-		cert.setVisible(true);
-		cert.validate();
-		certframe.validate();
-		
-		if (certificate != null) {
-			Dimension dc = certificate.getSize();
-			Dimension cd = cert.getSize();
-			((VerticalPanel) certificate).updateSize();
-		}
-		repaint();
-	}
-
-	public documentTemplate findCertificate(String targetid)
-	{
-		for (documentTemplate cert : MyCert_gui.templates) {
-			String certid = cert.getTemplateID();
-			if (certid != null && cert.getTemplateID().equals(targetid))
-				return cert;
-		}
-		return null;
 	}
 
 	public JMenu getFileMenu()
 	{
-		newfilemenu = new PMenu("File");
-		PMenuItem newitem = new PMenuItem("User", "user", this);
+		JMenu newfilemenu = new JMenu("File");
+		JMenuItem newitem = (JMenuItem) (new jswMenuItem("Export", "Export", this));
 		newfilemenu.add(newitem);
-		PMenuItem newitem2 = new PMenuItem("Template Loader", "tempload", this);
-		newfilemenu.add(newitem2);
-		PMenuItem newitem3 = new PMenuItem("Messages", "message", this);
-		newfilemenu.add(newitem3);
+		// JMenuItem newitem = (JMenuItem) (new jswMenuItem("Gnucash", "loadmycash",
+		// this));
+		// newfilemenu.add(newitem);
 		return newfilemenu;
-	}
-
-	public PMenuItem getLoadMenu()
-	{
-		loadmenu = new PMenuItem("Load Certificate");
-		loadmenu.addActionListener(this);
-		loadmenu.setActionCommand("load");
-		return loadmenu;
-	}
-
-	public JMenu getSaveMenu()
-	{
-		savemenu = new PMenu("Save Certificate");
-		PMenuItem newitem = new PMenuItem("Save As", "saveas", this);
-		savemenu.add(newitem);
-		PMenuItem newitem2 = new PMenuItem("Save Auto", "saveauto", this);
-		savemenu.add(newitem2);
-		PMenuItem newitem3 = new PMenuItem("Save", "save", this);
-		savemenu.add(newitem3);
-		return savemenu;
-	}
-
-	public JMenu getTemplateMenu()
-	{
-		newcertificatemenu = new PMenu("New Certificate");
-		makeTemplateMenu();
-		return newcertificatemenu;
 	}
 
 	@Override
 	public void itemStateChanged(ItemEvent e)
 	{
-		// TODO Auto-generated method stub
+		// System.out.println(" Selection"+e);
 	}
 
 	public Document loadDocument(String filename)
 	{
-		try {
+		try
+		{
 			SAXReader reader = new SAXReader();
 			Document document = reader.read(new File(filename));
 			return document;
-		} catch (DocumentException e) {
-			MyCert_gui.messagepanel.error(" failed opening " + filename + " "
-					+ e);
+		} catch (DocumentException e)
+		{
+			// MyCert_gui.messagepanel.error(" failed openingxxx " + filename + " " + e);
 		}
 		return null;
-	}
-
-	public void makeTemplateMenu()
-	{
-		newcertificatemenu.removeAll();
-		for (documentTemplate cert : MyCert_gui.templates) {
-			PMenuItem newitem = new PMenuItem(cert.getName(), "LOAD:"
-					+ cert.getTemplateID(), this);
-			newcertificatemenu.add(newitem);
-		}
-		PMenuItem newitem = new PMenuItem("Refresh List", "refreshlist", this);
-		newcertificatemenu.add(newitem);
-		newcertificatemenu.validate();
-		cert.validate();
-		certframe.validate();
-		repaint();
-		repaint();
-	}
-
-	public void reloadAll()
-	{
-		utils.loadAllTemplates();
-		makeTemplateMenu();
 	}
 
 	public void serializetoXML(Document doc, String filepath) throws Exception
@@ -453,99 +277,73 @@ public class certificateeditpanel extends JPanel implements ActionListener,
 	public void setMenu(JMenuBar mainmenu)
 	{
 		mainmenu.add(getFileMenu());
-		mainmenu.add(getTemplateMenu());
-		mainmenu.add(getSaveMenu());
-		mainmenu.add(savepath);
-		mainmenu.add(getLoadMenu());
 	}
 
-	public void setMenuVisible(boolean vis)
+	@Override
+	public void valueChanged(ListSelectionEvent e)
 	{
-		if (newfilemenu != null) {
-			newfilemenu.setVisible(vis);
-			savepath.setVisible(vis);
-			newcertificatemenu.setVisible(vis);
-			savemenu.setVisible(vis);
-			loadmenu.setVisible(vis);
-		}
+		MyCash_gui.outputpanel.setText("");
+		selectedmbaccount = (mb_account) budgetlist.getSelectedValue();
+		MyCash_gui.outputpanel.append(selectedmbaccount.heading());
+		// selectedmbaccount.totalTransfers();
+		selectedmbaccount.listTranssplits();
+		MyCash_gui.outputpanel.append(selectedmbaccount.footing());
+		lastclick = "budget";
+		// outputarea.setName("Budgets");
+		MyCash_gui.outputpanel.setName("Budgets");
+		// outputarea.repaint();
 	}
 
-	public void updateDoc(Document doc, String newsavepath)
+	public void valueChanged(TreeSelectionEvent e)
 	{
-		Element root = doc.getRootElement();
-		Node certele =  doc.selectSingleNode("//certificate");
-		List<Node> editionnodes = doc.selectNodes("//edition");
-		Node editiondetails=null;
-		int enodecount = editionnodes.size();
-		if(enodecount==0)
+		selectedtreenode = (gc_account_tree_node) mytree.getLastSelectedPathComponent();
+		if (selectedtreenode == null)
+			return;
+		gc_account selectedaccount = selectedtreenode.account;
+		MyCash_gui.outputpanel.setText("");
+		selectedtreenode.transsplits.totalTransfers();
+		MyCash_gui.outputpanel.append(selectedaccount.heading());
+		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.heading());
+		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.toString());
+		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.footing());
+		MyCash_gui.outputpanel.append("found " + selectedtreenode.transsplits.size() + "\n");
+		lastclick = "tree";
+	}
+
+	public int saveCSV(String filename, gc_account_tree_node node)
+	{
+
+		PrintWriter printWriter;
+		int k = 0;
+		try
 		{
-			editiondetails = root.addElement("edition");
+			printWriter = new PrintWriter(filename);
+			printWriter.print((selectedtreenode.transsplits.toCSV()));
+			printWriter.close();
+		} catch (Exception e)
+		{
+			e.printStackTrace();
 		}
-		else 
-			{
-			editiondetails = editionnodes.get(0);
-			List<Node>  esubnodes = editiondetails.selectNodes("*");
-			for(Node dn:esubnodes)
-			{
-				dn.getParent().remove(dn);
-			}
-			if(enodecount>1)
-			{
-				for (int n=1;n<enodecount;n++)
-			    {
-					Node dn = editionnodes.get(n);
-					dn.getParent().remove(dn);
-				}
-			}
-			}
-		
-		utils.addElement(editiondetails, "savepath", newsavepath);
-		utils.addElement(editiondetails, "editor", MyCert_gui.username);
-		utils.addElement(editiondetails, "editdate", utils.getTodaysDate());
-		List<Node> templatenodes = doc.selectNodes("//template");
-		for (Node nd : templatenodes) {
-			nd.getParent().remove(nd);
-		}
-		currenttemplate.toDOM4JDoc(root);
+		return k;
+
 	}
-	
-	public Document styleDocument( Document document, String xslt )
-	   {
 
-	      // create an instance of TransformerFactory
-	      TransformerFactory transformerFactory = TransformerFactory
-	            .newInstance();
-	      // initialize Transformer
-	      Transformer transformer = null;
-	      try
-	      {
-	         transformer = transformerFactory.newTransformer( new StreamSource(
-	               xslt ) );
-	      }
-	      catch (TransformerConfigurationException e)
-	      {
-	         e.printStackTrace();
-	      }
-	      Document finalDoc = null;
-	      if (null != transformer)
-	      {
-	         DocumentSource source = new DocumentSource( document );
-	         DocumentResult result = new DocumentResult();
-	         // transform the source to the document result
-	         try
-	         {
-	            transformer.transform( source, result );
-	         }
-	         catch (TransformerException e)
-	         {
+	private int saveCSV(String path, mb_account selectedmbaccount2)
+	{
 
-	            e.printStackTrace();
-	         }
+		PrintWriter printWriter;
+		int k = 0;
+		try
+		{
+			printWriter = new PrintWriter(path);
+			printWriter.print((selectedmbaccount2.transsplits.toCSV()));
+			printWriter.close();
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		return k;
 
-	         // return the transformed document
-	         finalDoc = result.getDocument();
-	      }
-	      return finalDoc;
-	   }
+	}
 
 }

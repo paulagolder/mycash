@@ -1,4 +1,4 @@
-package org.lerot.MyCert;
+package org.lerot.MyCash;
 
 import java.io.File;
 
@@ -10,6 +10,6 @@ public class XMLFilter implements java.io.FileFilter
 		if (f.isDirectory())
 			return true;
 		String name = f.getName().toLowerCase();
-		return name.endsWith(".xml");
+		return name.endsWith(".gnucash");
 	}
 }

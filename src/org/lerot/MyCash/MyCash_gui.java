@@ -1,6 +1,5 @@
-package org.lerot.MyCert;
+package org.lerot.MyCash;
 
-import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -8,9 +7,11 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
-import java.util.TreeSet;
-import java.util.Vector;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.InvalidPropertiesFormatException;
+import java.util.Properties;
 
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -18,165 +19,246 @@ import javax.swing.JMenuBar;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.ListModel;
 import javax.swing.UIManager;
 
+import org.lerot.mywidgets.jswStyle;
+import org.lerot.mywidgets.jswStyles;
 
-
-public class MyCert_gui extends JFrame
+public class MyCash_gui extends JFrame
 {
 	static Color backgroundcolor;
 	public static JTabbedPane browserpanel;
-	public static certificateeditpanel certificateframeloaderpanel;
-	public static String certificatepath, temppath;
-	public static Vector<documentTemplate> certificates = new Vector<documentTemplate>();
+	public static mainpanel accountpanel;
+	public static String accountspath, temppath;
+
 	public static String defaultfontname = "Helvetica";
-	public static Font guiMenufont, footnotefont, defaultfont,
-			guiTextFieldfont, headingfont;
+	public static Font guiMenufont, footnotefont, defaultfont, guiTextFieldfont, headingfont;
 	public static JMenuBar mainmenu;
 	public static String mce_userpath;
 	public static String os;
 	private static final long serialVersionUID = 1L;
 	public static boolean showborders = false;
 	public static String storepath;
-	static templateloaderpanel templateloaderpanel;
-	static messagepanel messagepanel;
-	static userpanel userframepanel;
-	public static String templatepath;
-	static TreeSet<documentTemplate> templates ;
-	private static final double version = 2.1;
-	public static String username;
-	public static String userdir,userhome;
-	public static user currentuser;
-	
 
+	public static gc_splits MySplits;
+	public static gc_transactions MyTransactions;
+	public static gc_accounts MyAccounts;
+	public static gc_account topaccount;
+
+	private static final double version = 2.1;
+	static ListModel mybudgetaccounts;
+
+	static JPanel cards;
+
+	private static jswStyles tablestyles;
+	private static jswStyles panelstyles;;
+	static String budgetfile;
+	public static my_budgets mybudgets;
+	public static gc_transsplits MyTranssplits;
+	public static String mycashexport;
+	public static String dburl;
+	public static String dbuser;
+	public static String dbpassword;
+	static JTextArea outputpanel;
+	//public static JTextArea outputarea;
+	public static JTextArea outputarea;
+	
+	public static void initiateStyles()
+	{
+		tablestyles = jswStyles.getDefaultStyles();
+		tablestyles.name = "table";
+		jswStyle tablestyle = tablestyles.makeStyle("table");
+		tablestyle.putAttribute("background", "red");
+		jswStyle rowstyle = tablestyles.makeStyle("row");
+		rowstyle.putAttribute("height", "10");
+		jswStyle col0style = tablestyles.makeStyle("col_0");
+		col0style.putAttribute("fontStyle", Font.BOLD);
+		col0style.setHorizontalAlign("RIGHT");
+		col0style.putAttribute("minwidth", "true");
+		jswStyle col1style = tablestyles.makeStyle("col_1");
+		col1style.putAttribute("fontStyle", Font.BOLD);
+		col1style.setHorizontalAlign("RIGHT");
+		jswStyle col2style = tablestyles.makeStyle("col_2");
+		col2style.putAttribute("horizontalAlignment", "RIGHT");
+		col2style.putAttribute("minwidth", "true");
+
+		panelstyles = jswStyles.getDefaultStyles();
+		panelstyles.name = "panel";
+		jswStyle jswWidgetStyles = panelstyles.makeStyle("jswWidget");
+		jswWidgetStyles.putAttribute("backgroundColor", "#e0dcdf");
+		jswWidgetStyles.putAttribute("boxbackgroundColor", "GREEN");
+		jswWidgetStyles.putAttribute("foregroundColor", "Black");
+		jswWidgetStyles.putAttribute("borderWidth", "0");
+		jswWidgetStyles.putAttribute("fontsize", "14");
+		jswWidgetStyles.putAttribute("borderColor", "blue");
+
+		jswStyle jswLabelStyles = panelstyles.makeStyle("jswLabel");
+		jswStyle largelabelStyle = panelstyles.makeStyle("largeLabel");
+		largelabelStyle.putAttribute("fontsize", "30");
+		largelabelStyle.putAttribute("foregroundColor", "Red");
+
+		jswStyle jswButtonStyles = panelstyles.makeStyle("jswButton");
+		jswButtonStyles.putAttribute("fontsize", "10");
+
+		jswStyle jswToggleButtonStyles = panelstyles.makeStyle("jswToggleButton");
+		jswToggleButtonStyles.putAttribute("foregroundColor", "Red");
+
+		jswStyle jswTextBoxStyles = panelstyles.makeStyle("jswTextBox");
+
+		jswStyle jswTextFieldStyles = panelstyles.makeStyle("jswTextField");
+		// jswTextFieldStyles.putAttribute("backgroundColor", "#e0dcdf");
+
+		jswStyle jswDropDownBoxStyles = panelstyles.makeStyle("jswDropDownBox");
+		// jswDropDownBoxStyles.putAttribute("backgroundColor","#C0C0C0");
+
+		jswStyle jswhpStyles = panelstyles.makeStyle("jswContainer");
+		jswhpStyles.putAttribute("backgroundColor", "#C0C0C0");
+
+		jswStyle jswDropDownContactBoxStyles = panelstyles.makeStyle("jswDropDownContactBox");
+		jswDropDownContactBoxStyles.putAttribute("backgroundColor", "#C0C0C0");
+		jswDropDownContactBoxStyles.putAttribute("fontsize", "10");
+
+		jswStyle jswScrollPaneStyles = panelstyles.makeStyle("jswScrollPaneStyles");
+		jswScrollPaneStyles.putAttribute("backgroundColor", "#C0C0C0");
+		jswScrollPaneStyles.putAttribute("fontsize", "10");
+
+		jswStyle jswBorderStyle = panelstyles.makeStyle("borderstyle");
+		jswBorderStyle.putAttribute("borderWidth", "1");
+		// jswBorderStyle.putAttribute("borderColor", "#C0C0C0");
+		jswBorderStyle.putAttribute("borderColor", "black");
+
+		jswStyle hpanelStyle = panelstyles.makeStyle("hpanelstyle");
+		hpanelStyle.putAttribute("borderWidth", "2");
+		hpanelStyle.putAttribute("borderColor", "blue");
+		hpanelStyle.putAttribute("height", "100");
+
+		jswStyle pbStyle = panelstyles.makeStyle("jswPushButton");
+		pbStyle.putAttribute("backgroundColor", "#C0C0C0");
+		pbStyle.putAttribute("fontsize", "10");
+
+		pbStyle.putAttribute("foregroundColor", "black");
+		jswStyle greenfont = panelstyles.makeStyle("greenfont");
+		greenfont.putAttribute("foregroundColor", "green");
+
+	}
 	public static void main(String[] args)
 	{
-
-	 //	PlasticLookAndFeel laf = new Plastic3DLookAndFeel();
-    	//PlasticLookAndFeel.setCurrentTheme(new ExperienceBlue());
-    //	try {
-	//		UIManager.setLookAndFeel(laf);
-	//	} catch (UnsupportedLookAndFeelException e) {
-	//		e.printStackTrace();
-	//	}
 		UIManager.LookAndFeelInfo[] looks = UIManager.getInstalledLookAndFeels();
-		for (UIManager.LookAndFeelInfo look : looks) {
-		System.out.println(look.getClassName());
+		for (UIManager.LookAndFeelInfo look : looks)
+		{
+			//System.out.println(look.getClassName());
 		}
-		/*try
-		{
-			PlasticLookAndFeel laf = new Plastic3DLookAndFeel();
-		    PlasticLookAndFeel.setCurrentTheme(new ExperienceBlue());
-			UIManager.setLookAndFeel(laf);
-		} catch (Exception e)
-		{
-		}*/
 		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-		;
-		MyCert_gui mframe = new MyCert_gui(200, 200, d.width - 400,
-				d.height - 400);
 
-		mframe.addWindowListener(new WindowAdapter()
-		{
+		MyCash_gui mframe = new MyCash_gui(200, 200, d.width - 400, d.height - 400);
+
+		mframe.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e)
 			{
 				System.exit(0);
 			}
 		});
-		mframe.getContentPane().setLayout(
-				new BoxLayout(mframe.getContentPane(), BoxLayout.Y_AXIS));
+		mframe.getContentPane().setLayout(new BoxLayout(mframe.getContentPane(), BoxLayout.Y_AXIS));
 		mframe.pack();
 		mframe.setVisible(true);
 	}
 	public String osversion;
-	JSplitPane splitPane = null;;
+	JSplitPane splitPane = null;
 	public int treefont, listfont, messagefont, tablefont;
-	static JPanel cards;
 	public int width, height;
-	String mymessage="";
+	//String mymessage = "";
+	private String user;
+	private String propsfile;
+	private Properties props;
 
-	public MyCert_gui(int x, int y, int w, int h)
+
+	private String dotmycash;
+	private String mycashhome;
+	private String userdir;
+	private String userhome;
+	private String javahome;
+	private String desktop;
+	
+	
+
+	public MyCash_gui(int x, int y, int w, int h)
 	{
-		super("CERTIFICATES");
+
+		super("gnucash");
+
 		this.setLocation(x, y);
+		this.setBounds(x, y, w, h);
 		width = w;
 		height = h;
 		treefont = 16;
 		listfont = 14;
 		messagefont = 14;
 		tablefont = 12;
-		String userhome = "";
-		userdir = System.getProperty("user.dir");
-	    System.out.println(userdir);
-		username = System.getProperty("user.name");
+
 		osversion = System.getProperty("os.version");
 		os = System.getProperty("os.name");
-		 //System.out.println(os);
-		if (os.contains("Vista"))
+	    userdir = System.getProperty("user.dir");
+		userhome = System.getProperty("user.home");
+		user = System.getProperty("user.name");
+        userdir =  System.getProperty("user.dir");
+        javahome=  System.getProperty("java.home");
+		System.out.println(os);
+		System.out.println(osversion);
+		System.out.println(userdir);
+		System.out.println("**"+userhome);
+		System.out.println(user);
+		System.out.println(javahome);
+		try
 		{
-			initVista();
-		} 
-		else if (os.contains(" XP"))
+			//com.sun.java.swing.plaf.motif.MotifLookAndFeel
+			   UIManager.setLookAndFeel(
+			            UIManager.getCrossPlatformLookAndFeelClassName());
+			//UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (Exception e)
 		{
-			int k=0;
-			if(userdir.indexOf("Documents and Settings")>0)
-			{
-				int l= userdir.indexOf("Documents and Settings");
-				 k = userdir.indexOf("\\", l+23);
-			}
-			else
-			      k = userdir.indexOf("\\", 9);
-			userhome = userdir.substring(0, k) + "/";
-			 System.out.println(userhome);
-			File f = new File(userhome + "Certificates");
-			if (f.exists())
-			{
-				certificatepath = f.getAbsolutePath();
-				System.out.println(certificatepath);
-			} else
-			{
-				f = new File(userhome + "My Documents/Certificates");
-				if (f.exists())
-				{
-					certificatepath = f.getAbsolutePath();
-					System.out.println(certificatepath);
-				} else
-				{
-					certificatepath = "";
-					System.out.println(" not found ");
-					mymessage += "Cannot find a Certificates folder";
-				}
-			}
-		} else if (os.equals("Linux"))
-		{
-			userhome = "/home/"+ username+"/";
-			certificatepath = userhome + "public_html/Certificates/";
+			System.err.println("Couldn't use system look and feel.");
 		}
-		else
+		if (os.startsWith("Linux"))
 		{
-			certificatepath = "";
-			mymessage += "\nCannot recognise operating system : "+ os;
+			System.out.println(" Linux identified ");
+			dotmycash = "/home/" + user + "/.mycash/";
+			mycashhome = "/home/" + user + "/Documents/mycash/";
+			mycashexport = "/home/" + user + "/Documents/mycash/export";
+			desktop = "/home/" + user + "/Desktop/";
+			propsfile = dotmycash + "linux_properties.xml";
 		}
-		
-		templates = new TreeSet<documentTemplate>(new TreeComp());
-		
-		mymessage += "\nOS = "+os;
-		mymessage += "\nLaunch path ="+userdir ;
-		mymessage += "\nCertificate path ="+certificatepath ;
-		templatepath = certificatepath + "/Templates/";
-		// certificatepath = "/home/paul/Certificates/";
-		temppath = certificatepath + "/temp/";
-
-		loadUser();
-
+		else if (os.startsWith("Windows"))
+		{
+			System.out.println(" Windows identified ");
+			dotmycash = userhome + "/.mycash/";
+			mycashhome = userhome + "/Documents/mycash/";
+			mycashexport = userhome + "/Documents/MyCash/";
+			desktop = "C:/Users/" +user+ "/Desktop/";
+			propsfile = dotmycash + "windows_properties.xml";
+		} else
+		{
+			System.out.println(" No  operating system identified  ");
+			System.exit(0);
+		}
+		System.out.println("++"+dotmycash);
+		System.out.println(mycashhome);
+		System.out.println(mycashexport);
+		System.out.println(propsfile);
+		budgetfile = dotmycash + "budgets.xml";
+		props = readProperties(propsfile);
+		dburl=  props.getProperty("dburl", "-!-!");
+		dbuser =  props.getProperty("dbuser", "");
+		dbpassword =  props.getProperty("dbpassword", "");
+		temppath = accountspath + "/temp/";
 		guiMenufont = new Font("Dialog", Font.PLAIN, 18);
 		guiTextFieldfont = new Font("Dialog", Font.PLAIN, 14);
 		footnotefont = new Font("SansSerif", Font.ITALIC, 10);
 		headingfont = new Font("SansSerif", Font.ITALIC, 18);
 		defaultfont = new Font("Serif", Font.PLAIN, 12);
-		addWindowListener(new WindowAdapter()
-		{
+		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e)
 			{
@@ -184,118 +266,48 @@ public class MyCert_gui extends JFrame
 				System.exit(0);
 			}
 		});
+
+		initiateStyles();
 		backgroundcolor = this.getBackground();
 		setVisible(true);
 		Container contentpane = getContentPane();
 		JFrame.setDefaultLookAndFeelDecorated(true);
+		this.setBackground(Color.GREEN);
 		setSize(new Dimension(w, h));
-		cards = new JPanel(new CardLayout());
-		cards.setPreferredSize(new Dimension(w, h));
+
+		this.setPreferredSize(new Dimension(w, h));
 		mainmenu = new JMenuBar();
 		this.setJMenuBar(mainmenu);
-		messagepanel = new messagepanel();
-		templateloaderpanel = new templateloaderpanel();
-		certificateframeloaderpanel = new certificateeditpanel();
-		userframepanel = new userpanel();
-		templateloaderpanel.setMenu(mainmenu);
-		userframepanel.setMenu(mainmenu);
-		certificateframeloaderpanel.setMenu(mainmenu);
-		messagepanel.setMenu(mainmenu);
-		cards.add(templateloaderpanel, "Template Loader");
-		cards.add(certificateframeloaderpanel, "Certificate loader");
-		cards.add(userframepanel, "User");
-		cards.add(messagepanel, "Messages");
-
-		contentpane.add(cards);
-		selectCard("Messages");
-		MyCert_gui.messagepanel.display(mymessage);
-		if (certificatepath != null)
-		{
-			utils.loadAllTemplates();
-			templateloaderpanel.reloadList();
-			certificateframeloaderpanel.makeTemplateMenu();
-			utils.sleep(5);
-			selectCard("Certificate loader");
-		} else
-		{
-			//MyCert_gui.selectCard("Messages");
-			//MyCert_gui.messagepanel.display(mymessage);
-		}
+		accountpanel = new mainpanel();
+		contentpane.add(accountpanel);
+		accountpanel.setMenu(mainmenu);
+		accountpanel.setBackground(Color.green);
+		accountpanel.setVisible(true);
+		accountpanel.repaint();
+	    outputpanel = accountpanel.currentdocument.textArea;
+		validate();
 		pack();
 
 	}
 
-	public static void selectCard(String string)
+	public java.util.Properties readProperties(String propsfile)
 	{
-		CardLayout cl = (CardLayout) (cards.getLayout());
-		cl.show(cards, string);
-	}
-
-	public boolean loadUser()
-	{
-		currentuser = new user("anon");
-		currentuser.loadUser(certificatepath + "user.xml");
-		if (currentuser.getName() == null)
+		Properties prop = new Properties();
+		try
 		{
-			currentuser.setName(username);
-			return false;
-		} else
-			return true;
-
-	}
-	
-	private void initVista()
-	{
-		
-			int k = userdir.indexOf("\\", 9);
-			System.out.println(userdir);
-			userhome = userdir.substring(0, k) + "/";
-			System.out.println(userhome);
-			String root = userhome;
-			File f = searchforfile(userhome , "Certificates");
-			
-			if (f!=null)
-			{
-				certificatepath = f.getAbsolutePath();
-				System.out.println("found"+certificatepath);
-			} else
-			{
-				if(root.endsWith("workspace/"))root= root.substring(0,root.length()-10);
-				if(root.endsWith("applications/"))root= root.substring(0,root.length()-13);
-				 f = searchforfile(root , "Certificates");		
-				if (f!=null)
-				{
-					certificatepath = f.getAbsolutePath();
-					System.out.println(certificatepath);
-				} else
-				{
-					certificatepath = "";
-					mymessage = "Cannot find a Certificates folder";
-				}
-			}
-		} 
-
-	
-	private File searchforfile(String root,String filename)
-	{
-		File f = new File(root + filename);
-		System.out.println("trying "+f.getAbsolutePath());
-		if (f.exists())
+			prop.loadFromXML(new FileInputStream(propsfile));
+			return prop;
+		} catch (InvalidPropertiesFormatException e)
 		{
-			return f;
-		} else
+			e.printStackTrace();
+		} catch (FileNotFoundException e)
 		{
-			f = new File(root + "Documents/"+filename);
-			System.out.println("trying "+f.getAbsolutePath());
-			if (f.exists())
-			{
-				return f;
-			} else
-			{
-				return null;
-			}
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
 		}
+		return null;
 	}
-	
 
 }

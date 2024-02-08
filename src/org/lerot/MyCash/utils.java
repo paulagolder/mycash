@@ -1,36 +1,30 @@
-package org.lerot.MyCert;
+package org.lerot.MyCash;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.URLConnection;
+import java.awt.GraphicsEnvironment;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
 import javax.swing.border.Border;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
-import org.dom4j.Branch;
 import org.dom4j.Element;
-import org.dom4j.Node;
 
 public class utils
 {
+
+	static Connection conn = null;
 
 	public static void setJTextPaneFont(JTextPane jtp, Font font, Color c)
 	{
@@ -46,25 +40,6 @@ public class utils
 		// of the document by 1 so that text entered at the end of the
 		// document uses the attributes.
 		doc.setCharacterAttributes(0, doc.getLength() + 1, attrs, false);
-	}
-
-	public static Element addElement(Element root, String name, String text)
-	{
-		if (text == null)
-			return null;
-		Element el = root.addElement(name);
-		el.addText(text);
-		return el;
-	}
-
-	public static Element addElement(Node rootnode, String name, String text)
-	{
-		if (text == null)
-			return null;
-		Element el = ((Branch) rootnode).addElement(name);
-		el.addText(text);
-		return el;
-
 	}
 
 	public static Color color(String colorname)
@@ -96,232 +71,141 @@ public class utils
 			return Color.black;
 	}
 
-	public static String fetch(String address) throws MalformedURLException,
-			IOException
-	{
-		URL url = new URL(address);
-		return (String) url.getContent();
-	}
-
-	public static int fontstyle(String style)
-	{
-		if (style == null)
-			return Font.PLAIN;
-		int istyle = 0;
-		String astyle = " " + style.toLowerCase();
-		if (astyle.indexOf("bold") > 0)
-			istyle += Font.BOLD;
-		if (astyle.indexOf("italic") > 0)
-			istyle += Font.ITALIC;
-		return istyle;
-	}
-
 	public static String getTodaysDate()
 	{
 		String DATE_FORMAT = "yyyy-MM-dd";
-		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
-				DATE_FORMAT);
+		java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(DATE_FORMAT);
 		Date d1 = new Date();
 		return sdf.format(d1);
 	}
 
-	public static void GetURLInfo(String urlstr) throws IOException
+	public static Connection myconnect()
 	{
-		URL url = new URL(urlstr);
-		URLConnection u = url.openConnection();
-		// Display the URL address, and information about it.
-		System.out.println(u.getURL().toExternalForm() + ":");
-		System.out.println("  Content Type: " + u.getContentType());
-		System.out.println("  Content Length: " + u.getContentLength());
-		System.out.println("  Last Modified: " + new Date(u.getLastModified()));
-		System.out.println("  Expiration: " + u.getExpiration());
-		System.out.println("  Content Encoding: " + u.getContentEncoding());
-		System.out.println("First five lines:");
-		BufferedReader d = new BufferedReader(new InputStreamReader(
-				u.getInputStream()));
-		for (int i = 0; i < 10; i++) {
-			String line = d.readLine();
-			if (line == null)
-				break;
-			System.out.println("  " + line);
+		Connection conn = null;
+		try
+		{
+			String dburl = MyCash_gui.dburl;
+			String dbuser = MyCash_gui.dbuser;
+			String dbpassword = MyCash_gui.dbpassword;
+			conn = DriverManager.getConnection(dburl, dbuser,dbpassword);
+		} catch (SQLException ex)
+		{
+			System.out.println("SQLException: " + ex.getMessage());
+			System.out.println("SQLState: " + ex.getSQLState());
+			System.out.println("VendorError: " + ex.getErrorCode());
 		}
-
+		return conn;
 	}
 
-	public static void loadAllTemplates()
+	public static void connectsqlite()
 	{
-		String ftphost = MyCert_gui.currentuser.getFtphost();
-		String ftpuser = MyCert_gui.currentuser.getFtpusername();
-		String ftpdirectory = MyCert_gui.currentuser.getFtpdirectory();
-		String ftppassword = MyCert_gui.currentuser.getFtppassword();
-		
-		MyCert_gui.templates.clear();
-		MyCert_gui.selectCard("Messages");
-		//loadcollectionfromFTP("ftp.lerot.org", "jcert@lerot.org", "/Templates");
-		loadcollectionfromFTP(ftphost, ftpuser, ftpdirectory, ftppassword);
-		loadcollectionfromDev();
-	}
+		String connectstring = "";
 
-	static void loadtemplate(File file)
-	{
-		String filename = file.getName();
-		String fp = "";
-		try {
-			fp = file.getCanonicalPath();
-		} catch (Exception e4) {
-			return;
-		}
-		if (fp == null || fp == "")
-			return;
-		if (filename.endsWith(".xml")) {
-			// try
+		Connection con;
+		try
+		{
+			Class.forName("org.sqlite.JDBC");
+
+			connectstring = "jdbc:sqlite:" + "path";
+			con = DriverManager.getConnection(connectstring);
+			if (con != null)
 			{
-				// System.out.println(" loading template "+ filename );
-				List<documentTemplate> certlist = documentTemplate
-						.getTemplates(fp);
-				for (documentTemplate acertificate : certlist) {
-					MyCert_gui.templates.add(acertificate);
-				}
-			} // catch (Exception e3)
-				// {
-				// System.out.println("loaded error " + filename+e3);
-				// }
 
-		}
-	}
-
-	public static void loadcollectionfromFTP(String host, String user,
-			String directory, String password)
-	{
-		if(host == null) return;
-		MyCert_gui.messagepanel.display("Connecting to ftp");
-		FTPClient ftp = new FTPClient();
-		try {
-			ftp.connect(host);
-			ftp.login(user, password);
-			MyCert_gui.messagepanel.display("Connected to " + host + " " + user
-					+ " " + directory);
-			MyCert_gui.messagepanel.display(ftp.getReplyString());
-			if (ftp == null)
-				return;
-			try {
-				Thread.sleep(1000);
-			} catch (Throwable t) {
-				throw new OutOfMemoryError("An Error has occured");
-			}
-			ftp.enterLocalPassiveMode();
-			ftp.cwd(directory);
-			MyCert_gui.messagepanel.display(ftp.getReplyString());
-			FTPFile[] files = ftp.listFiles();
-			for (int i = 0; i < files.length; i++) {
-				FTPFile sfile = files[i];
-				String sname = sfile.getName();
-				if (sname.endsWith(".xml")) {
-					MyCert_gui.messagepanel.display("loading " + sname
-							+ " from " + MyCert_gui.temppath + "temp_" + sname);
-					String ffile = sname;
-					FileOutputStream out = new FileOutputStream(
-							MyCert_gui.temppath + "temp_" + sname);
-					boolean result = ftp.retrieveFile(ffile, out);
-					out.close();
-					if (!result) {
-						MyCert_gui.messagepanel.display("loaded error in "
-								+ sname);
-					} else
-						utils.loadtemplate(new File(MyCert_gui.temppath
-								+ "temp_" + sname));
-				}
-			}
-			ftp.logout();
-			ftp.disconnect();
-		} catch (SocketException e) {
-			MyCert_gui.messagepanel.display("error Connecting to ftp" + e);
-		} catch (IOException e) {
-			MyCert_gui.messagepanel.display("error2 Connecting to ftp" + e);
+				System.out.println("opened :   dblite ");
+			} else
+				System.out.println("Cannot connect to " + connectstring);
+		} catch (Exception e)
+		{
+			String errorMessage = e.getClass().getName() + ": " + e.getMessage();
+			System.out.println("Cannot connect to " + connectstring);
+			con = null;
 		}
 
 	}
 
-	public static void loadcollectionfromDev()
+	public static Border setborder(String bordercolor, int borderWidth)
 	{
-		MyCert_gui.messagepanel.display("Connecting to dev..");
-		String devpath = MyCert_gui.certificatepath + "Dev";
-		File dev = new File(devpath);
-
-		if (!dev.exists())
-			return;
-		if (!dev.isDirectory())
-			return;
-		// Loop thru files and directories in this path
-		String[] files = dev.list();
-		for (int i = 0; i < files.length; i++) {
-			String sname = files[i];
-
-			if (sname.endsWith(".xml")) {
-				File f2 = new File(devpath, sname);
-				if (f2.isFile()) {
-					utils.loadtemplate(new File(devpath, sname));
-					MyCert_gui.messagepanel.display("loading " + sname
-							+ " from dev ");
-				}
-			}
-		}
-
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	private static String readFileAsString(String filePath)
-			throws java.io.IOException
+	public static int fontstyle(String fontstyle)
 	{
-		StringBuffer fileData = new StringBuffer(1000);
-		BufferedReader reader = new BufferedReader(new FileReader(filePath));
-		char[] buf = new char[1024];
-		int numRead = 0;
-		while ((numRead = reader.read(buf)) != -1) {
-			String readData = String.valueOf(buf, 0, numRead);
-			fileData.append(readData);
-			buf = new char[1024];
-		}
-		reader.close();
-		return fileData.toString();
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 	public static Border setborder()
 	{
-		return setborder(Color.black, 1);
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	public static Border setborder(Color bc, int width)
+	public static Border setborder(Color gray, int borderWidth)
 	{
-		return BorderFactory.createCompoundBorder(
-				BorderFactory.createLineBorder(bc, width),
-				BorderFactory.createEmptyBorder(1, 1, 1, 1));
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	public static Border setborder(String bordercolor, int border)
+	public static String getDateElement(Element element2, String string)
 	{
-		return setborder(color(bordercolor), border);
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	public static Border setcborder(String label)
+	public static int Integer(String text)
 	{
-		return BorderFactory.createCompoundBorder(
-				BorderFactory.createTitledBorder(label),
-				BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		java.lang.Integer number = Integer.valueOf(text);
+		return number;
 	}
 
-	public static String printd(Dimension d)
+	public static void ShowFonts()
 	{
-		return "(" + d.width + "," + d.height + ")";
-	}
 
-	public static void sleep(int secs)
-	{
-		try {
-			Thread.sleep(secs * 1000);
-		} catch (InterruptedException ie) {
-			// System.out.println(ie.getMessage());
+		Font[] fonts;
+		fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+		for (int i = 0; i < fonts.length; i++)
+		{
+			System.out.print(fonts[i].getFontName() + " : ");
+			System.out.print(fonts[i].getFamily() + " : ");
+			System.out.print(fonts[i].getName());
+			System.out.println();
 		}
 
 	}
+	
+	  public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+	        List<Entry<K, V>> list = new ArrayList<>(map.entrySet());
+	        list.sort(Entry.comparingByValue());
 
+	        Map<K, V> result = new LinkedHashMap<>();
+	        for (Entry<K, V> entry : list) {
+	            result.put(entry.getKey(), entry.getValue());
+	        }
+
+	        return result;
+	    }
+
+	public static String rightpad(int k, String vf)
+	{
+		String rp = "           "+vf;
+		return rp.substring(rp.length()-k);
+	}
+
+	public static String leftpad(int k, String text)
+	{
+		String rp = text+ String.format("%" + k + "c", ' ');
+		return rp.substring(0,k);
+	}
+	  
+
+	public static String replacecommas(String text)
+	{
+		String rtext = text.replace(", ","_");
+		return rtext.replace(",","_");
+		
+	}
+	  
+	  
+	  
 }
