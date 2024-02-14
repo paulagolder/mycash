@@ -3,6 +3,8 @@ package org.lerot.MyCash;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.dom4j.Element;
@@ -13,143 +15,184 @@ public class mb_account
 
 	private String name;
 	private String code;
-
-	private gc_transactions transactions;
 	gc_transsplits transsplits;
 	private float opening_balance;
 	private String description;
 	private float totalin;
 	private float totalout;
 	private float closing_balance;
+	ArrayList<mb_transfer> transfers;
 
 	public mb_account(Node anode)
 	{
-		name = ((Element) anode).attributeValue("name");
-		code = ((Element) anode).attributeValue("code");
-		description = ((Element) anode).attributeValue("description");
-		transactions = getTransactions(code);
-		transsplits = new gc_transsplits(code);
-
-		if(((Element) anode).attributeValue("opening_balance") != null)
-	    	opening_balance =  Float.parseFloat(((Element) anode).attributeValue("opening_balance"));
-		else
-			opening_balance = 0.00f;
-		closing_balance = opening_balance;
-	}
-
-	public gc_transactions getTransactions(String code)
-	{
-		String query = " SELECT UNIQUE(s.tx_guid) as guid  FROM splits s, transactions t  WHERE   s.tx_guid = t.guid  ";
-		query += " and t.num = \"" + code + "\"  order by t.post_date ";
-
-		PreparedStatement st= null;
-		ResultSet resset = null;
-		Connection con = null;
-
-		gc_transactions result = new gc_transactions();
-		int n = 0;
-
-		try
+		transfers = new ArrayList<mb_transfer>();
+		if (anode != null)
 		{
-			con = utils.myconnect();
-			st = con.prepareStatement(query);
-			resset = st.executeQuery();
-			while (resset.next())
+			name = ((Element) anode).attributeValue("name");
+			code = ((Element) anode).attributeValue("code");
+			description = ((Element) anode).attributeValue("description");
+			List<Node> transferList = anode.selectNodes("transfer");
+			for (Node tnode : transferList)
 			{
-				String txid = resset.getString("guid");
-				gc_transaction newtransaction = MyCash_gui.MyTransactions.get(txid);
-				result.put(txid, newtransaction);
-				n = n + 1;
+				mb_transfer newtrans = new mb_transfer(tnode);
+				transfers.add(newtrans);
+				if (newtrans.getLabel().toLowerCase().contains("opening"))
+				{
+					opening_balance = newtrans.getValue();
+				}
 			}
-			System.out.println(" Loaded budget account :" + name + " transactions =" + n);
-		} catch (Exception e)
+			transsplits = new gc_transsplits(code);
+		    totalTransfers();
+			closing_balance = opening_balance + totalin - totalout ;;
+		} else
 		{
-			System.out.println(e);
-		}finally {
-		    try { resset.close(); } catch (Exception e) { /* Ignored */ }
-		    try { st.close(); } catch (Exception e) { /* Ignored */ }
-		    try { con.close(); } catch (Exception e) { /* Ignored */ }
+			name = "Unallocated ";
+			code = null;
+			description = "Un-budgeted expenditure";
+			transsplits = new gc_transsplits("");
+			opening_balance = 0;
+			closing_balance = 0;
 		}
-		return result;
 	}
 
-	
+	public String getName()
+	{
+		return name;
+	}
+
+	public void setName(String name)
+	{
+		this.name = name;
+	}
+
+	public String getCode()
+	{
+		return code;
+	}
+
+	public void setCode(String code)
+	{
+		this.code = code;
+	}
+
+	public gc_transsplits getTranssplits()
+	{
+		return transsplits;
+	}
+
+	public void setTranssplits(gc_transsplits transsplits)
+	{
+		this.transsplits = transsplits;
+	}
+
+	public float getOpening_balance()
+	{
+		return opening_balance;
+	}
+
+	public void setOpening_balance(float opening_balance)
+	{
+		this.opening_balance = opening_balance;
+	}
+
+	public String getDescription()
+	{
+		if (description == null)
+			return "";
+		return description;
+	}
+
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
+
+	public float getTotalin()
+	{
+		return totalin;
+	}
+
+	public void setTotalin(float totalin)
+	{
+		this.totalin = totalin;
+	}
+
+	public float getTotalout()
+	{
+		return totalout;
+	}
+
+	public void setTotalout(float totalout)
+	{
+		this.totalout = totalout;
+	}
+
+	public float getClosing_balance()
+	{
+		return closing_balance;
+	}
+
+	public void setClosing_balance(float closing_balance)
+	{
+		this.closing_balance = closing_balance;
+	}
 
 	public String heading()
 	{
-        String outline = name + "(" + code + ")" +  description + "\n";
-        outline += "  opening balance =" + opening_balance+ "\n";
-		outline += "  total receipts =" + totalin + " total dispenses =" + totalout + "\n\n";
-        return outline;
+		String outline = name + "(" + code + ")" + description + "\n";
+		outline += "  opening balance =" + opening_balance + "\n";
+		outline += "  total receipts =" + totalin + " total dispenses =" + totalout + "\n";
+		outline += "  closing balance =" + closing_balance + "\n\n";
+		return outline;
 	}
-	
-	
-	public String accountrow()
+
+	public String accountrowToTXT()
 	{
-        String outline = utils.leftpad(10, code) + utils.leftpad(40, name+" "+ description) ;
-        outline +=  String.format("%8.2f", opening_balance)+" ";
-        outline +=  String.format("%8.2f", totalin)+" ";
-        outline +=  String.format("%8.2f", totalout)+" ";
-		outline +=  "\n";
-        return outline;
+		String outline = utils.leftpad(10, code) + utils.leftpad(40, name + " " + getDescription());
+		outline += String.format("%8.2f", opening_balance) + " ";
+		outline += String.format("%8.2f", totalin) + " ";
+		outline += String.format("%8.2f", totalout) + " ";
+		outline += String.format("%8.2f", closing_balance) + " ";
+		outline += "\n";
+		return outline;
 	}
-	
+
 	public String footing()
 	{
-		 String outline = "\n";
-	        outline += "  closing balance =" + closing_balance+ "\n";
-	        return outline;
+		String outline = "\n";
+		outline += "  closing balance =" + closing_balance + "\n";
+		return outline;
 	}
 
-	public void listTransactions()
+	public String listTranssplits()
 	{
-		if (transactions == null)
-		{
-			MyCash_gui.outputpanel.append(" no transaction for " + this.name + "\n");
-			return;
-		}
-		if (transactions.size() < 0)
-		{
-			MyCash_gui.outputpanel.append(" no transactions " + "\n");
-		} else
-		{
-			for (Entry<String, gc_transaction> next : transactions.entrySet())
-			{
-				if (next.getValue() == null)
-				{
-					MyCash_gui.outputpanel.append(" no transaction 2 " + next.getValue() + "\n");
-				} else
-					next.getValue().logtoconsol();
-			}
-		}
-	}
 
-	public void listTranssplits()
-	{
+		String output = "";
 		if (transsplits == null)
 		{
-			MyCash_gui.outputpanel.append(" no transsplits for " + this.name + "\n");
-			return;
-		}
-		if (transsplits.size() < 0)
+			output += " no transsplits for " + this.name + "\n";
+
+		} else if (transsplits.size() < 0)
 		{
-			MyCash_gui.outputpanel.append(" no transsplits 2 " + "\n");
+			output += " no transsplits 2 " + "\n";
+
 		} else
 		{
 			for (gc_transsplit nextts : transsplits)
 			{
 				if (nextts == null)
 				{
-					MyCash_gui.outputpanel.append(" no transsplit 3" + "\n");
+					output += " no transsplit 3" + "\n";
 				} else
 				{
 					if (nextts.Value_number > 0)
 					{
-						MyCash_gui.outputpanel.append(nextts.toString());
+						output += nextts.toString();
 					}
 				}
 			}
 		}
+		return output;
 	}
 
 	public String toString()
@@ -161,13 +204,27 @@ public class mb_account
 	{
 		totalin = 0.0f;
 		totalout = 0.0f;
+		for (mb_transfer atrans : transfers)
+		{
+			if (!atrans.getLabel().toLowerCase().contains("opening"))
+			{
+				if (atrans.getValue() > 0)
+				{
+					totalin += atrans.getValue();
+				} else
+				{
+					totalout += atrans.getValue();
+				}
+			}
+
+		}
 
 		for (gc_transsplit nextts : transsplits)
 		{
 			if (nextts != null)
 			{
 
-				if (nextts.Value_number > 0)
+				if (nextts.Value_number < 0)
 				{
 					totalin += ((float) nextts.Value_number) / nextts.Value_denom;
 				} else
@@ -175,13 +232,105 @@ public class mb_account
 					totalout += ((float) nextts.Value_number) / nextts.Value_denom;
 				}
 			}
-
 		}
-		closing_balance += totalout;
+	}
+
+	public String printdetail()
+	{
+		String output = "";
+		output += name + " " + getDescription() + " ";
+		output += accountrowToTXT();
+		for (mb_transfer atran : transfers)
+		{
+			output += " " + atran.print() + "\n";
+		}
+		output += this.listTranssplits();
+		return output;
+	}
+
+	public String printdetailToCSV()
+	{
+		String output = "";
+		output += name + ", " + getDescription() + ", ";
+		output += accountrowToCSV();
+		for (mb_transfer atran : transfers)
+		{
+			output += " " + atran.printCSV() + "\n";
+		}
+		output += this.listTranssplits();
+		return output;
+	}
+	
+	
+	public String toTxt()
+	{
+		String output = "";
+		if (transsplits == null)
+		{
+			output += " no transsplits for " + this.name + "\n";
+
+		} else if (transsplits.size() < 0)
+		{
+			output += " no transsplits 2 " + "\n";
+
+		} else
+		{
+			for (gc_transsplit nextts : transsplits)
+			{
+				if (nextts == null)
+				{
+					output += " no transsplit 3" + "\n";
+				} else
+				{
+					if (nextts.Value_number > 0)
+					{
+						output += nextts.toString();
+					}
+				}
+			}
+		}
+		return output;
+	}
+	
+	public String toCsv()
+	{
+		String output = "";
+		if (transsplits == null)
+		{
+			return " No transactions ";
+
+		} else if (transsplits.size() < 0)
+		{
+			return " No transactions ";
+
+		} else
+		{
+			for (gc_transsplit nextts : transsplits)
+			{
+				if (nextts == null)
+				{
+					//return null;
+				} else
+				{
+					if (nextts.Value_number > 0)
+					{
+						output += nextts.toCSV();
+					}
+				}
+			}
+			return output;
+		}
+	
+	}
+
+	public String accountrowToCSV()
+	{
+			String outline = code+", "+name+", "+opening_balance+", " +totalin+", "+totalout+", "+closing_balance + "\n";
+			return outline;
+		
 	}
 
 	
-
 
 
 }

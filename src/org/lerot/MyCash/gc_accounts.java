@@ -20,31 +20,50 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 	public void getAccounts()
 	{
 		java.lang.String query = "select * from accounts where 1 order by guid ";
-		PreparedStatement st= null;
+		PreparedStatement st = null;
 		ResultSet resset = null;
 		Connection con = null;
-		
+
 		int n = 0;
 
 		try
 		{
-			 con = utils.myconnect();
+			con = utils.myconnect();
 			st = con.prepareStatement(query);
-			 resset = st.executeQuery();
+			resset = st.executeQuery();
 			while (resset.next())
 			{
 				gc_account anaccount = new gc_account(resset);
+				if(anaccount.getAccount_id().equalsIgnoreCase ("27cf363fdb0440d7ac18f41f7b74893e"))
+				{
+					System.out.println("here");
+				}
 				put(anaccount.getAccount_id(), anaccount);
 				n = n + 1;
 			}
 		} catch (Exception e)
 		{
 			System.out.println(e);
-		}
-		finally {
-		    try { resset.close(); } catch (Exception e) { /* Ignored */ }
-		    try { st.close(); } catch (Exception e) { /* Ignored */ }
-		    try { con.close(); } catch (Exception e) { /* Ignored */ }
+		} finally
+		{
+			try
+			{
+				resset.close();
+			} catch (Exception e)
+			{
+				/* Ignored */ }
+			try
+			{
+				st.close();
+			} catch (Exception e)
+			{
+				/* Ignored */ }
+			try
+			{
+				con.close();
+			} catch (Exception e)
+			{
+				/* Ignored */ }
 		}
 
 		for (Entry<String, gc_account> entry : this.entrySet())
@@ -97,7 +116,7 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 		for (Entry<String, gc_account> entry : this.entrySet())
 		{
 			gc_account anaccount = entry.getValue();
-			if (anaccount.getParent_id() == null)
+			if (anaccount.getParent_id() == null && anaccount.getName().equalsIgnoreCase ("Root Account") )
 			{
 				return anaccount;
 			}
@@ -109,11 +128,5 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 	{
 		return this.indexOf(ch);
 	}
-
-	
-
-	
-
-	
 
 }

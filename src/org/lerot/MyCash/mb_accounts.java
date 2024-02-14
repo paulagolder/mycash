@@ -68,22 +68,39 @@ public class mb_accounts extends ArrayList<mb_account> implements ListModel
 		output += heading();
 		for( mb_account mba : this)
 		{
-			output += mba.accountrow();
+			output += mba.accountrowToTXT();
+		}
+		return output;
+	}
+	
+	public String budgetsummaryToCSV()
+	{
+		String output ="";
+		output += headingToCSV();
+		for( mb_account mba : this)
+		{
+			output += mba.accountrowToCSV();
 		}
 		return output;
 	}
 
-	private String heading()
-	{
 
-		
-	        String outline = utils.leftpad(50, "") ;
-	        outline += "  opening  total    total  \n";
-	        outline += utils.leftpad(50, "") ;
-	        outline += "  balance  receipts dispenses  \n";
-	        return outline;
-		
+	private String headingToCSV()
+	{
+		String outline = " , ,opening, total, total, closing \n";
+		  outline += " , ,balance, receipts, dispenses, balance \n";
+		return outline;
 	}
 
+	private String heading()
+	{	
+	        String outline = utils.leftpad(50, "") ;
+	        outline += "  opening  total    total  closing \n";
+	        outline += utils.leftpad(50, "") ;
+	        outline += "  balance  receipts dispenses  balance \n";
+	        return outline;		
+	}
+
+	
 
 }

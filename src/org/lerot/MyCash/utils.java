@@ -87,41 +87,42 @@ public class utils
 			String dburl = MyCash_gui.dburl;
 			String dbuser = MyCash_gui.dbuser;
 			String dbpassword = MyCash_gui.dbpassword;
-			conn = DriverManager.getConnection(dburl, dbuser,dbpassword);
-		} catch (SQLException ex)
+			
+			if(dburl.contains("sqlite"))
+			{		
+				try
+				{
+					Class.forName("org.sqlite.JDBC");
+					conn = DriverManager.getConnection(dburl);
+					if (conn != null)
+					{
+						//System.out.println("opened :   dblite ");
+					} else
+						System.out.println("Cannot connect to " + dburl);
+				} catch (Exception e)
+				{
+					String errorMessage = e.getClass().getName() + ": " + e.getMessage();
+					System.out.println("Cannot connect to " + dburl);
+					conn = null;
+				}
+			}else
+			{
+				Class.forName("com.mysql.cj.jdbc.Driver");
+			    conn = DriverManager.getConnection(dburl, dbuser,dbpassword);
+			}
+		} catch (SQLException  ex)
 		{
 			System.out.println("SQLException: " + ex.getMessage());
 			System.out.println("SQLState: " + ex.getSQLState());
 			System.out.println("VendorError: " + ex.getErrorCode());
+		} catch (ClassNotFoundException e)
+		{ 
+			e.printStackTrace();
 		}
 		return conn;
 	}
 
-	public static void connectsqlite()
-	{
-		String connectstring = "";
-
-		Connection con;
-		try
-		{
-			Class.forName("org.sqlite.JDBC");
-
-			connectstring = "jdbc:sqlite:" + "path";
-			con = DriverManager.getConnection(connectstring);
-			if (con != null)
-			{
-
-				System.out.println("opened :   dblite ");
-			} else
-				System.out.println("Cannot connect to " + connectstring);
-		} catch (Exception e)
-		{
-			String errorMessage = e.getClass().getName() + ": " + e.getMessage();
-			System.out.println("Cannot connect to " + connectstring);
-			con = null;
-		}
-
-	}
+	
 
 	public static Border setborder(String bordercolor, int borderWidth)
 	{

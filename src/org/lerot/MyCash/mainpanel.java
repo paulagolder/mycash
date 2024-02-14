@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
+import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.ScrollPaneLayout;
 import javax.swing.event.ListSelectionEvent;
@@ -59,8 +60,8 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 	JScrollPane treeView;
 	JScrollPane budgetView;
 	String lastclick = "";
-	//private JList<mb_account> budgetlist;
-	
+	// private JList<mb_account> budgetlist;
+
 	private JList<mb_account> budgetlist;
 	private gc_account_tree_node selectedtreenode;
 	private mb_account selectedmbaccount;
@@ -75,26 +76,37 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		setName("mainpanel");
 
 		leftframe = new jswVerticalPanel("", false);
-		
+
 		MyCash_gui.MyTransactions = new gc_transactions();
 		MyCash_gui.MyTransactions.getTransactions();
 		System.out.println("Transactions:" + MyCash_gui.MyTransactions.size());
 
-		MyCash_gui.MySplits = new gc_splits(" root top");
-		MyCash_gui.MySplits.getSplits();
+		// MyCash_gui.MySplits = new gc_splits(" root top");
+		// MyCash_gui.MySplits.getSplits();
 
 		MyCash_gui.MyAccounts = new gc_accounts("account list");
 		MyCash_gui.MyAccounts.getAccounts();
+
+		MyCash_gui.MySplits = new gc_splits(" root top");
+		MyCash_gui.MySplits.getSplits();
+
 		MyCash_gui.topaccount = MyCash_gui.MyAccounts.getTop();
 		topnode = new gc_account_tree_node("top", MyCash_gui.topaccount);
 		topnode.transsplits.totalTransfers();
 		MyCash_gui.mybudgets = new my_budgets();
-		jswVerticalPanel treepanel = new jswVerticalPanel("Accounts",true);
+		myba = MyCash_gui.mybudgets.get(0).getAccounts();
+		// myba.totalTransfers();
+
+		jswVerticalPanel treepanel = new jswVerticalPanel("Accounts", true);
 		jswHorizontalPanel buttonbar = new jswHorizontalPanel();
-		jswButton aoverview = new jswButton(this, "Overview","accountsoverview");
+		jswButton aoverview = new jswButton(this, "Overview", "treeoverview");
 		buttonbar.add(" center ", aoverview);
-		 treepanel.add(buttonbar);
-		
+		treepanel.add(buttonbar);
+
+		jswButton atoverview = new jswButton(this, "Detail", "treedetail");
+		buttonbar.add(" center ", atoverview);
+		treepanel.add(buttonbar);
+
 		gc_account_tree treemodel = new gc_account_tree(topnode);
 		// topnode.getTranssplits().totalTransfers();
 		mytree = new JTree(treemodel);
@@ -102,23 +114,24 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		jswMyCashTreeScrollPane accountframe = new jswMyCashTreeScrollPane(mytree);
 		treepanel.add(mytree);
 		leftframe.add(treepanel);
-		
-		jswVerticalPanel budgetpanel = new jswVerticalPanel("Budgets",true);
+
+		jswVerticalPanel budgetpanel = new jswVerticalPanel("Budgets", true);
 		jswHorizontalPanel bbuttonbar = new jswHorizontalPanel();
-		jswButton boverview = new jswButton(this, "Overview","budgetsoverview");
+		jswButton boverview = new jswButton(this, "Overview", "budgetsoverview");
 		bbuttonbar.add(" center ", boverview);
+		jswButton bdetail = new jswButton(this, "Detail", "budgetsdetail");
+		bbuttonbar.add(" center ", bdetail);
 		budgetpanel.add(bbuttonbar);
-	    myba = MyCash_gui.mybudgets.get(0).getAccounts();
-		myba.totalTransfers();
+
 		budgetlist = new JList(myba);
 		// JScrollPane listScroller = new JScrollPane(budgetlist);
 
-		//budgetlist.setBorder(jswStyle.makecborder("Budgets"));
+		// budgetlist.setBorder(jswStyle.makecborder("Budgets"));
 		budgetlist.addListSelectionListener(this);
 		jswMyCashListScrollPane budgetframe = new jswMyCashListScrollPane(budgetlist);
 		// leftframe.add(" FILLH ", budgetlist);
 		budgetpanel.add(" FILLH ", budgetframe);
-        leftframe.add(" FILLH ",budgetpanel);
+		leftframe.add(" FILLH ", budgetpanel);
 		add(" LEFT WIDTH=300 ", leftframe);
 
 		currentdocument = new jswMyCashScrollPane();
@@ -138,16 +151,99 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 	public void actionPerformed(ActionEvent e)
 	{
 		String command = e.getActionCommand();
-		if (command.equals("Export"))
+		if (command.equals("print"))
 		{
 			JFileChooser fc = new JFileChooser();
 			fc.setDialogTitle("Specify a file to save");
 			fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-			FileNameExtensionFilter filter = new FileNameExtensionFilter("csv", "csv");
+			FileNameExtensionFilter filter = new FileNameExtensionFilter("txt", "txt");
 			fc.setFileFilter(filter);
+			fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
 			if (lastclick.equalsIgnoreCase("budget"))
 			{
-				fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
+				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedmbaccount + ".txt";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					save(fileToSave.getPath(), selectedmbaccount.toTxt());
+				}
+			} else if (lastclick.equalsIgnoreCase("tree"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedtreenode.account.getName() + ".txt";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					save(fileToSave.getPath(), selectedtreenode.transsplits.toTXT());
+				}
+			} else if (lastclick.equalsIgnoreCase("budgetsoverview"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_budgetoverview.txt";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					save(fileToSave.getPath(), myba.budgetsummary());
+				}
+			} else if (lastclick.equalsIgnoreCase("budgetsdetail"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_budgetdetail.txt";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					String output = "";
+					ListModel<mb_account> model = budgetlist.getModel();
+					for (int i = 0; i < model.getSize(); i++)
+					{
+						output += model.getElementAt(i).printdetail() + "\n";
+					}
+					save(fileToSave.getPath(), output);
+				}
+
+			} else if (lastclick.equalsIgnoreCase("treeoverview"))
+			{
+
+				String bufilename = MyCash_gui.mycashexport + "/export_budgetdetail.txt";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					String output = "";
+					output += " Accounts :" + "\n";
+
+					gc_account_tree_node anode = topnode.getnode("Opening Balances");
+					output += anode.printOpeningSummary();
+					anode = topnode.getnode("Income");
+					output += anode.printIncomeSummary();
+					anode = topnode.getnode("Expenses");
+					output += anode.printIncomeSummary();
+					anode = topnode.getnode("Assets");
+					output += anode.printAssetsSummary();
+					save(fileToSave.getPath(), output);
+				}
+			}
+		} else if (command.equals("export"))
+		{
+			JFileChooser fc = new JFileChooser();
+			fc.setDialogTitle("Specify a file to save");
+			fc.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV", "csv");
+			fc.setFileFilter(filter);
+			fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
+			if (lastclick.equalsIgnoreCase("budget"))
+			{
 				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedmbaccount + ".csv";
 				File file = new File(bufilename);
 				fc.setSelectedFile(file);
@@ -155,11 +251,10 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 				if (returnVal == JFileChooser.APPROVE_OPTION)
 				{
 					File fileToSave = fc.getSelectedFile();
-					saveCSV(fileToSave.getPath(), selectedmbaccount);
+					save(fileToSave.getPath(), selectedmbaccount.toCsv());
 				}
-			} else
+			} else if (lastclick.equalsIgnoreCase("tree"))
 			{
-				fc.setCurrentDirectory(new File(MyCash_gui.mycashexport));
 				String bufilename = MyCash_gui.mycashexport + "/export_" + selectedtreenode.account.getName() + ".cvs";
 				File file = new File(bufilename);
 				fc.setSelectedFile(file);
@@ -167,7 +262,50 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 				if (returnVal == JFileChooser.APPROVE_OPTION)
 				{
 					File fileToSave = fc.getSelectedFile();
-					saveCSV(fileToSave.getPath(), selectedtreenode);
+					save(fileToSave.getPath(), selectedtreenode.transsplits.toCSV());
+				}
+			} else if (lastclick.equalsIgnoreCase("budgetsoverview"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_budgetoverview.csv";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					save(fileToSave.getPath(), myba.budgetsummaryToCSV());
+				}
+			} else if (lastclick.equalsIgnoreCase("budgetsdetail"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_budgetdetail.csv";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					String output = "";
+					ListModel<mb_account> model = budgetlist.getModel();
+					for (int i = 0; i < model.getSize(); i++)
+					{
+						output += model.getElementAt(i).printdetailToCSV() + "\n";
+					}
+					save(fileToSave.getPath(), output);
+				}
+
+			} else if (lastclick.equalsIgnoreCase("treeoverview"))
+			{
+				String bufilename = MyCash_gui.mycashexport + "/export_accounts.cvs";
+				File file = new File(bufilename);
+				fc.setSelectedFile(file);
+				String output = selectedtreenode.transsplits.toCSV();
+				gc_account_tree_walker atw = new gc_account_tree_walker(" node ", topnode);
+				output = atw.toCSV(topnode);
+				int returnVal = fc.showSaveDialog(this);
+				if (returnVal == JFileChooser.APPROVE_OPTION)
+				{
+					File fileToSave = fc.getSelectedFile();
+					save(fileToSave.getPath(), output);
 				}
 			}
 		}
@@ -184,10 +322,11 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 			MyCash_gui.MyAccounts.logtoconsol();
 			return;
 		}
-		if (command.equals("accountsoverview"))
+		if (command.equals("treeoverview"))
 		{
 			MyCash_gui.outputpanel.setText("");
 			MyCash_gui.outputpanel.append(" Accounts :" + "\n");
+
 			gc_account_tree_node anode = topnode.getnode("Opening Balances");
 			MyCash_gui.outputpanel.append(anode.printOpeningSummary());
 			anode = topnode.getnode("Income");
@@ -196,15 +335,39 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 			MyCash_gui.outputpanel.append(anode.printIncomeSummary());
 			anode = topnode.getnode("Assets");
 			MyCash_gui.outputpanel.append(anode.printAssetsSummary());
-			lastclick = "accountoverview";
+			lastclick = "treeoverview";
 		}
 		if (command.equals("budgetsoverview"))
 		{
 			MyCash_gui.outputpanel.setText("");
 			selectedmbaccount = (mb_account) budgetlist.getSelectedValue();
 			MyCash_gui.outputpanel.append(myba.budgetsummary());
-			lastclick = "budgetoverview";
+			lastclick = "budgetsoverview";
 		}
+		if (command.equals("budgetsdetail"))
+		{
+			String output = "";
+			MyCash_gui.outputpanel.setText("");
+			ListModel<mb_account> model = budgetlist.getModel();
+			for (int i = 0; i < model.getSize(); i++)
+			{
+				output += model.getElementAt(i).printdetail() + "\n";
+			}
+
+			MyCash_gui.outputpanel.append(output);
+			lastclick = "budgetsdetail";
+		}
+		if (command.equals("treedetail"))
+		{
+			MyCash_gui.outputpanel.setText("");
+			MyCash_gui.outputpanel.append(" Accounts :" + "\n");
+			gc_account_tree_walker atw = new gc_account_tree_walker(" node ", topnode);
+			String output = atw.printAllChildren(topnode);
+			MyCash_gui.outputpanel.append(output);
+			lastclick = "treedetail";
+
+		}
+
 		System.out.println(" selected " + command);
 	}
 
@@ -236,11 +399,10 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 	public JMenu getFileMenu()
 	{
 		JMenu newfilemenu = new JMenu("File");
-		JMenuItem newitem = (JMenuItem) (new jswMenuItem("Export", "Export", this));
+		JMenuItem newitem = (JMenuItem) (new jswMenuItem("Print (txt)", "print", this));
 		newfilemenu.add(newitem);
-		// JMenuItem newitem = (JMenuItem) (new jswMenuItem("Gnucash", "loadmycash",
-		// this));
-		// newfilemenu.add(newitem);
+		JMenuItem anewitem = (JMenuItem) (new jswMenuItem("Export (csv)", "export", this));
+		newfilemenu.add(anewitem);
 		return newfilemenu;
 	}
 
@@ -283,15 +445,11 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 	public void valueChanged(ListSelectionEvent e)
 	{
 		MyCash_gui.outputpanel.setText("");
+
 		selectedmbaccount = (mb_account) budgetlist.getSelectedValue();
-		MyCash_gui.outputpanel.append(selectedmbaccount.heading());
-		// selectedmbaccount.totalTransfers();
-		selectedmbaccount.listTranssplits();
-		MyCash_gui.outputpanel.append(selectedmbaccount.footing());
+		String detail = selectedmbaccount.printdetail();
+		MyCash_gui.outputpanel.append(detail);
 		lastclick = "budget";
-		// outputarea.setName("Budgets");
-		MyCash_gui.outputpanel.setName("Budgets");
-		// outputarea.repaint();
 	}
 
 	public void valueChanged(TreeSelectionEvent e)
@@ -310,7 +468,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		lastclick = "tree";
 	}
 
-	public int saveCSV(String filename, gc_account_tree_node node)
+	public int save(String filename, String txtout)
 	{
 
 		PrintWriter printWriter;
@@ -318,25 +476,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		try
 		{
 			printWriter = new PrintWriter(filename);
-			printWriter.print((selectedtreenode.transsplits.toCSV()));
-			printWriter.close();
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		return k;
-
-	}
-
-	private int saveCSV(String path, mb_account selectedmbaccount2)
-	{
-
-		PrintWriter printWriter;
-		int k = 0;
-		try
-		{
-			printWriter = new PrintWriter(path);
-			printWriter.print((selectedmbaccount2.transsplits.toCSV()));
+			printWriter.print(txtout);
 			printWriter.close();
 		} catch (Exception e)
 		{

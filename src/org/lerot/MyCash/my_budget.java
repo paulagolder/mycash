@@ -29,9 +29,6 @@ public class my_budget
 	private String description;
 	private mb_accounts accounts;
 
-
-
-
 	public my_budget(Element node)
 	{
 		loadBudget(node);
@@ -74,9 +71,10 @@ public class my_budget
 		List<Node> accountslist = node.selectNodes("account");
 		for (Node anode : accountslist)
 		{
-			accounts.add(new mb_account(anode));
-			
-		}
+			accounts.add(new mb_account(anode));				
+		}	
+		mb_account residualaccount = new mb_account(null);
+		accounts.add(residualaccount);
 
 	}
 

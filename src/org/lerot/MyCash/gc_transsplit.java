@@ -42,7 +42,7 @@ public class gc_transsplit
 			setSplit_ID(asplit.Split_ID);
 			setTx_ID(asplit.Tx_ID);
 			setAccount_ID(asplit.Account_ID);
-			setMemo(asplit.Memo);
+			setMemo(asplit.getMemo());
 			setAction(asplit.Action);
 			setReconcile_state(asplit.Reconcile_date);
 			setReconcile_date(asplit.Reconcile_date);
@@ -114,7 +114,8 @@ public class gc_transsplit
 
 	public String getNumber()
 	{
-		return Num;
+		if(Num == null) return "";
+		else return Num;
 	}
 
 	public String getPost_date()
@@ -296,17 +297,15 @@ public class gc_transsplit
 	public String toCSV()
 	{
 		String output = "";
-		String date = getPost_date_short().trim() +", ";
+		String date = getPost_date_short().trim() ;
 		String sdescription = getDescription().trim();
-		String snum =  getNumber().trim()+", ";
+		String snum =  getNumber().trim();
 		String direction = "";
 		String svalue = "";
 
 		float value = (float) getValue_number() / getValue_denom();
-		String vf = String.format("%8.2f", Math.abs(value)).trim()+", ";
-		// output += " Transfer+ ";
-		//svalue = " " + utils.rightpad(8, vf)+", ";
-
+		String vf = String.format("%8.2f", Math.abs(value)).trim();
+	
 		if (value > 0)
 		{
 			direction = "to " + getAccount_name().trim();
@@ -324,7 +323,7 @@ public class gc_transsplit
 		}
 
 		sdescription =  utils.replacecommas(sdescription.trim())+ ", ";
-		output += date + sdescription +", "+ snum + " " + vf + direction + "\n";
+		output += date +", "+  sdescription +", "+ snum + ", " + vf + ", "+direction + "\n";
 		return output;
 
 	}
@@ -345,12 +344,12 @@ public class gc_transsplit
 
 		if (value > 0)
 		{
-			direction = " to:" + getAccount_name();
+			direction = "   to:" + getAccount_name();
 		} else
 		{
-			direction = "   from:" + getAccount_name();
+			direction = " from:" + getAccount_name();
 		}
-		if (!output.contains(getMemo()))
+		if (!output.contains(getMemo())  )
 		{
 			sdescription += " " + getMemo();
 		}

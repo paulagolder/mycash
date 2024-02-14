@@ -25,6 +25,7 @@ public class gc_account
 	private String parent_id;
 	private String description;
 	private String parent_name;
+	private boolean isExpense;
 	private float opening_balance;
 
 
@@ -167,6 +168,16 @@ public class gc_account
         String outline = name + " " +  description + "\n\n";
      
         return outline;
+	}
+
+	public boolean isExpense()
+	{
+		return isExpense;
+	}
+
+	public void setExpense(boolean bool)
+	{
+		this.isExpense = bool;
 	}
 
 	

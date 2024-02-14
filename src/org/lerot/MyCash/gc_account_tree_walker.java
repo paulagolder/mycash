@@ -9,69 +9,61 @@ import javax.swing.tree.TreeModel;
 
 import org.lerot.MyCash.gc_account;
 
-public class gc_account_tree_walker 
+public class gc_account_tree_walker
 {
 	gc_account_tree_node topnode;
 
-	public  gc_account_tree_walker(String name, gc_account_tree_node anode)
-	{		
+	public gc_account_tree_walker(String name, gc_account_tree_node anode)
+	{
 		topnode = anode;
 		anode.transsplits = new gc_transsplits();
 	}
-	
-	public  void getAllChildren(gc_account_tree_node thisnode)
+
+	public void getAllChildren(gc_account_tree_node thisnode)
 	{
-			
+
 		if (thisnode.children.size() > 0)
 		{
 			for (gc_account_tree_node next : thisnode.children)
 			{
 				this.getAllChildren(next);
 			}
-		}
-		else
+		} else
 		{
-			 gc_account childaccount = thisnode.account;
-			 thisnode.transsplits = new gc_transsplits(childaccount);
-			 gc_account_tree_node pnode = thisnode.parent;
-			 while(pnode != null)
-			 {
-				 if(pnode.transsplits == null)				 
-				 {
-					 pnode.transsplits = new gc_transsplits();
-				 }
-				 pnode.transsplits.add(thisnode.transsplits );
-				 pnode = pnode.parent;
-			 }
+			gc_account childaccount = thisnode.account;
+			thisnode.transsplits = new gc_transsplits(childaccount);
+			gc_account_tree_node pnode = thisnode.parent;
+			while (pnode != null)
+			{
+				if (pnode.transsplits == null)
+				{
+					pnode.transsplits = new gc_transsplits();
+				}
+				pnode.transsplits.add(thisnode.transsplits);
+				pnode = pnode.parent;
+			}
 		}
 	}
-	
-	
-	public  void sortAllChildren(gc_account_tree_node thisnode)
+
+	public void sortAllChildren(gc_account_tree_node thisnode)
 	{
-			
+
 		if (thisnode.children.size() > 0)
 		{
-			 System.out.println(thisnode.account.getName()+"="+thisnode.transsplits.size());
-			 thisnode.transsplits = thisnode.transsplits.sortTransplits();
+			thisnode.transsplits = thisnode.transsplits.sortTransplits();
 			for (gc_account_tree_node next : thisnode.children)
 			{
 				this.sortAllChildren(next);
 			}
-		}
-		else
+		} else
 		{
-			 System.out.println(thisnode.account.getName()+"="+thisnode.transsplits.size());
-			 thisnode.transsplits = thisnode.transsplits.sortTransplits();
-			
+			thisnode.transsplits = thisnode.transsplits.sortTransplits();
 		}
 	}
-	
-	
-	
-	public  void  totalTransfers(gc_account_tree_node thisnode)
+
+	public void totalTransfers(gc_account_tree_node thisnode)
 	{
-			
+
 		if (thisnode.children.size() > 0)
 		{
 			float totalin = 0.0f;
@@ -84,37 +76,72 @@ public class gc_account_tree_walker
 			}
 			thisnode.getTranssplits().setTotalin(totalin);
 			thisnode.getTranssplits().setTotalout(totalout);
-		}
-		else
+		} else
 		{
-			
-			    float totalin = 0.0f;
-				float totalout = 0.0f;
 
-				for (gc_transsplit nextts : thisnode.transsplits)
+			float totalin = 0.0f;
+			float totalout = 0.0f;
+
+			for (gc_transsplit nextts : thisnode.transsplits)
+			{
+				if (nextts != null)
 				{
-					if (nextts != null)
+
+					if (nextts.Value_number > 0)
 					{
-
-						if (nextts.Value_number > 0)
-						{
-							totalin += ((float) nextts.Value_number) / nextts.Value_denom;
-						} else
-						{
-							totalout += ((float) nextts.Value_number) / nextts.Value_denom;
-						}
+						totalin += ((float) nextts.Value_number) / nextts.Value_denom;
+					} else
+					{
+						totalout += ((float) nextts.Value_number) / nextts.Value_denom;
 					}
-
 				}
-				thisnode.transsplits.setTotalin( totalin);
-				thisnode.transsplits.setTotalin(totalout);
-				//closing_balance -= totalout;
-			}
-			
-		}
-	
 
-	
-	
-	
+			}
+			thisnode.transsplits.setTotalin(totalin);
+			thisnode.transsplits.setTotalin(totalout);
+			// closing_balance -= totalout;
+		}
+
+	}
+
+	public String printAllChildren(gc_account_tree_node thisnode)
+	{
+		String output = "";
+        gc_account thisacc = thisnode.account;
+        output += "\n"+thisacc.heading();
+		if (thisnode.children.size() > 0)
+		{
+			for (gc_account_tree_node next : thisnode.children)
+			{
+				output += this.printAllChildren(next);
+			}
+		} else
+		{
+			gc_account childaccount = thisnode.account;
+			output += thisnode.transsplits.toString();
+			return output;
+		}
+		return output;
+
+	}
+
+	public String toCSV(gc_account_tree_node thisnode)
+	{
+		String output = "";
+
+		if (thisnode.children.size() > 0)
+		{
+			for (gc_account_tree_node next : thisnode.children)
+			{
+				output += this.toCSV(next);
+			}
+		} else
+		{
+			gc_account childaccount = thisnode.account;
+			output += thisnode.transsplits.toCSV();
+			return output;
+		}
+		return output;
+	}
+
 }

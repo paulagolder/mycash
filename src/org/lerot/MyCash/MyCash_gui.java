@@ -62,9 +62,9 @@ public class MyCash_gui extends JFrame
 	public static String dbuser;
 	public static String dbpassword;
 	static JTextArea outputpanel;
-	//public static JTextArea outputarea;
+	// public static JTextArea outputarea;
 	public static JTextArea outputarea;
-	
+
 	public static void initiateStyles()
 	{
 		tablestyles = jswStyles.getDefaultStyles();
@@ -143,12 +143,13 @@ public class MyCash_gui extends JFrame
 		greenfont.putAttribute("foregroundColor", "green");
 
 	}
+
 	public static void main(String[] args)
 	{
 		UIManager.LookAndFeelInfo[] looks = UIManager.getInstalledLookAndFeels();
 		for (UIManager.LookAndFeelInfo look : looks)
 		{
-			//System.out.println(look.getClassName());
+			// System.out.println(look.getClassName());
 		}
 		Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -165,15 +166,15 @@ public class MyCash_gui extends JFrame
 		mframe.pack();
 		mframe.setVisible(true);
 	}
+
 	public String osversion;
 	JSplitPane splitPane = null;
 	public int treefont, listfont, messagefont, tablefont;
 	public int width, height;
-	//String mymessage = "";
+	// String mymessage = "";
 	private String user;
 	private String propsfile;
 	private Properties props;
-
 
 	private String dotmycash;
 	private String mycashhome;
@@ -181,8 +182,6 @@ public class MyCash_gui extends JFrame
 	private String userhome;
 	private String javahome;
 	private String desktop;
-	
-	
 
 	public MyCash_gui(int x, int y, int w, int h)
 	{
@@ -200,23 +199,22 @@ public class MyCash_gui extends JFrame
 
 		osversion = System.getProperty("os.version");
 		os = System.getProperty("os.name");
-	    userdir = System.getProperty("user.dir");
+		userdir = System.getProperty("user.dir");
 		userhome = System.getProperty("user.home");
 		user = System.getProperty("user.name");
-        userdir =  System.getProperty("user.dir");
-        javahome=  System.getProperty("java.home");
+		userdir = System.getProperty("user.dir");
+		javahome = System.getProperty("java.home");
 		System.out.println(os);
 		System.out.println(osversion);
 		System.out.println(userdir);
-		System.out.println("**"+userhome);
+		System.out.println(userhome);
 		System.out.println(user);
 		System.out.println(javahome);
 		try
 		{
-			//com.sun.java.swing.plaf.motif.MotifLookAndFeel
-			   UIManager.setLookAndFeel(
-			            UIManager.getCrossPlatformLookAndFeelClassName());
-			//UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			// com.sun.java.swing.plaf.motif.MotifLookAndFeel
+			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+			// UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e)
 		{
 			System.err.println("Couldn't use system look and feel.");
@@ -229,29 +227,33 @@ public class MyCash_gui extends JFrame
 			mycashexport = "/home/" + user + "/Documents/mycash/export";
 			desktop = "/home/" + user + "/Desktop/";
 			propsfile = dotmycash + "linux_properties.xml";
-		}
-		else if (os.startsWith("Windows"))
+		} else if (os.startsWith("Windows"))
 		{
 			System.out.println(" Windows identified ");
 			dotmycash = userhome + "/.mycash/";
 			mycashhome = userhome + "/Documents/mycash/";
 			mycashexport = userhome + "/Documents/MyCash/";
-			desktop = "C:/Users/" +user+ "/Desktop/";
+			desktop = "C:/Users/" + user + "/Desktop/";
 			propsfile = dotmycash + "windows_properties.xml";
 		} else
 		{
 			System.out.println(" No  operating system identified  ");
 			System.exit(0);
 		}
-		System.out.println("++"+dotmycash);
+		System.out.println(dotmycash);
 		System.out.println(mycashhome);
 		System.out.println(mycashexport);
 		System.out.println(propsfile);
 		budgetfile = dotmycash + "budgets.xml";
 		props = readProperties(propsfile);
-		dburl=  props.getProperty("dburl", "-!-!");
-		dbuser =  props.getProperty("dbuser", "");
-		dbpassword =  props.getProperty("dbpassword", "");
+		dburl = props.getProperty("dburl", "-!-!");
+		dbuser = props.getProperty("dbuser", "");
+		dbpassword = props.getProperty("dbpassword", "");
+		if(dburl.contains("sqlite"))
+		{
+			System.out.println(" sqlite data  ");
+		}
+	
 		temppath = accountspath + "/temp/";
 		guiMenufont = new Font("Dialog", Font.PLAIN, 18);
 		guiTextFieldfont = new Font("Dialog", Font.PLAIN, 14);
@@ -271,6 +273,7 @@ public class MyCash_gui extends JFrame
 		backgroundcolor = this.getBackground();
 		setVisible(true);
 		Container contentpane = getContentPane();
+		contentpane.setName(dburl);
 		JFrame.setDefaultLookAndFeelDecorated(true);
 		this.setBackground(Color.GREEN);
 		setSize(new Dimension(w, h));
@@ -284,7 +287,7 @@ public class MyCash_gui extends JFrame
 		accountpanel.setBackground(Color.green);
 		accountpanel.setVisible(true);
 		accountpanel.repaint();
-	    outputpanel = accountpanel.currentdocument.textArea;
+		outputpanel = accountpanel.currentdocument.textArea;
 		validate();
 		pack();
 

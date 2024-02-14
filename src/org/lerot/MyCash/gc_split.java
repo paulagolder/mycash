@@ -17,7 +17,7 @@ public  class gc_split
 	protected String Split_ID;
 	protected String Tx_ID;
 	protected String Account_ID;
-	protected String Memo;
+	private String Memo;
 	protected String Action;
 	protected Boolean Reconcile_state;
 	protected String Reconcile_date;
@@ -55,7 +55,8 @@ public  class gc_split
 	}
 
 	public String getMemo() {
-		return Memo;
+		if(Memo == null)return "";
+		else return Memo;
 	}
 
 	public void setMemo(String memo) {
