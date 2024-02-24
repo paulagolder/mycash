@@ -40,7 +40,9 @@ import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import org.lerot.MyCash.layout.jswMenuItem;
-import org.lerot.MyCash.jswMyCashScrollPane;
+import org.lerot.MyCash.layout.jswMyCashListScrollPane;
+import org.lerot.MyCash.layout.jswMyCashScrollPane;
+import org.lerot.MyCash.layout.jswMyCashTreeScrollPane;
 import org.lerot.mywidgets.jswButton;
 import org.lerot.mywidgets.jswHorizontalPanel;
 import org.lerot.mywidgets.jswScrollPane;
@@ -60,7 +62,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 	JScrollPane treeView;
 	JScrollPane budgetView;
 	String lastclick = "";
-	// private JList<mb_account> budgetlist;
+	
 
 	private JList<mb_account> budgetlist;
 	private gc_account_tree_node selectedtreenode;
@@ -76,23 +78,17 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		setName("mainpanel");
 
 		leftframe = new jswVerticalPanel("", false);
-
+		MyCash_gui.MyAccounts = new gc_accounts("account list");
+		MyCash_gui.MyAccounts.getAccounts();
+		MyCash_gui.MyAccounts.getEntries();
 		MyCash_gui.MyTransactions = new gc_transactions();
 		MyCash_gui.MyTransactions.getTransactions();
 		System.out.println("Transactions:" + MyCash_gui.MyTransactions.size());
 
-		// MyCash_gui.MySplits = new gc_splits(" root top");
-		// MyCash_gui.MySplits.getSplits();
-
-		MyCash_gui.MyAccounts = new gc_accounts("account list");
-		MyCash_gui.MyAccounts.getAccounts();
-
-		MyCash_gui.MySplits = new gc_splits(" root top");
-		MyCash_gui.MySplits.getSplits();
 
 		MyCash_gui.topaccount = MyCash_gui.MyAccounts.getTop();
 		topnode = new gc_account_tree_node("top", MyCash_gui.topaccount);
-		topnode.transsplits.totalTransfers();
+		//topnode.totalTransfers();
 		MyCash_gui.mybudgets = new my_budgets();
 		myba = MyCash_gui.mybudgets.get(0).getAccounts();
 		// myba.totalTransfers();
@@ -108,9 +104,10 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		treepanel.add(buttonbar);
 
 		gc_account_tree treemodel = new gc_account_tree(topnode);
-		// topnode.getTranssplits().totalTransfers();
+	
 		mytree = new JTree(treemodel);
 		mytree.addTreeSelectionListener(this);
+	
 		jswMyCashTreeScrollPane accountframe = new jswMyCashTreeScrollPane(mytree);
 		treepanel.add(mytree);
 		leftframe.add(treepanel);
@@ -124,12 +121,8 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		budgetpanel.add(bbuttonbar);
 
 		budgetlist = new JList(myba);
-		// JScrollPane listScroller = new JScrollPane(budgetlist);
-
-		// budgetlist.setBorder(jswStyle.makecborder("Budgets"));
 		budgetlist.addListSelectionListener(this);
 		jswMyCashListScrollPane budgetframe = new jswMyCashListScrollPane(budgetlist);
-		// leftframe.add(" FILLH ", budgetlist);
 		budgetpanel.add(" FILLH ", budgetframe);
 		leftframe.add(" FILLH ", budgetpanel);
 		add(" LEFT WIDTH=300 ", leftframe);
@@ -144,6 +137,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		gc_account_tree_walker atw = new gc_account_tree_walker(" node ", topnode);
 		atw.getAllChildren(topnode);
 		atw.sortAllChildren(topnode);
+		atw.totalTransfers(topnode);
 
 	}
 
@@ -179,7 +173,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 				if (returnVal == JFileChooser.APPROVE_OPTION)
 				{
 					File fileToSave = fc.getSelectedFile();
-					save(fileToSave.getPath(), selectedtreenode.transsplits.toTXT());
+					save(fileToSave.getPath(), selectedtreenode.account.transactions.toTXT());
 				}
 			} else if (lastclick.equalsIgnoreCase("budgetsoverview"))
 			{
@@ -213,7 +207,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 			} else if (lastclick.equalsIgnoreCase("treeoverview"))
 			{
 
-				String bufilename = MyCash_gui.mycashexport + "/export_budgetdetail.txt";
+				String bufilename = MyCash_gui.mycashexport + "/export_accountdetail.txt";
 				File file = new File(bufilename);
 				fc.setSelectedFile(file);
 				int returnVal = fc.showSaveDialog(this);
@@ -262,7 +256,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 				if (returnVal == JFileChooser.APPROVE_OPTION)
 				{
 					File fileToSave = fc.getSelectedFile();
-					save(fileToSave.getPath(), selectedtreenode.transsplits.toCSV());
+					save(fileToSave.getPath(), selectedtreenode.account.transactions.toCSV());
 				}
 			} else if (lastclick.equalsIgnoreCase("budgetsoverview"))
 			{
@@ -298,7 +292,7 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 				String bufilename = MyCash_gui.mycashexport + "/export_accounts.cvs";
 				File file = new File(bufilename);
 				fc.setSelectedFile(file);
-				String output = selectedtreenode.transsplits.toCSV();
+				String output = selectedtreenode.account.transactions.toCSV();
 				gc_account_tree_walker atw = new gc_account_tree_walker(" node ", topnode);
 				output = atw.toCSV(topnode);
 				int returnVal = fc.showSaveDialog(this);
@@ -326,9 +320,9 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 		{
 			MyCash_gui.outputpanel.setText("");
 			MyCash_gui.outputpanel.append(" Accounts :" + "\n");
-
-			gc_account_tree_node anode = topnode.getnode("Opening Balances");
-			MyCash_gui.outputpanel.append(anode.printOpeningSummary());
+			gc_account_tree_node anode ;
+		     anode = topnode.getnode("Assets");
+		  	MyCash_gui.outputpanel.append(anode.printOpeningSummary());
 			anode = topnode.getnode("Income");
 			MyCash_gui.outputpanel.append(anode.printIncomeSummary());
 			anode = topnode.getnode("Expenses");
@@ -459,12 +453,17 @@ implements ActionListener, ItemListener, ComponentListener, TreeSelectionListene
 			return;
 		gc_account selectedaccount = selectedtreenode.account;
 		MyCash_gui.outputpanel.setText("");
-		selectedtreenode.transsplits.totalTransfers();
-		MyCash_gui.outputpanel.append(selectedaccount.heading());
-		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.heading());
-		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.toString());
-		MyCash_gui.outputpanel.append(selectedtreenode.transsplits.footing());
-		MyCash_gui.outputpanel.append("found " + selectedtreenode.transsplits.size() + "\n");
+	
+		MyCash_gui.outputpanel.append(selectedtreenode.account.heading());
+
+		if(selectedtreenode.isLeaf())
+		   MyCash_gui.outputpanel.append(selectedtreenode.account.listTransactions());
+		else
+		{
+			gc_transactions trans = selectedtreenode.collectTransactions();
+			MyCash_gui.outputpanel.append(trans.toString());
+		}
+				
 		lastclick = "tree";
 	}
 

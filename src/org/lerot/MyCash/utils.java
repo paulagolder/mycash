@@ -78,6 +78,12 @@ public class utils
 		Date d1 = new Date();
 		return sdf.format(d1);
 	}
+	
+	public static String direction(int d)
+	{
+		if ( d <0 ) return " OUT";
+		else return "  IN";
+	}
 
 	public static Connection myconnect()
 	{

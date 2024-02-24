@@ -16,7 +16,7 @@ public class gc_account_tree_walker
 	public gc_account_tree_walker(String name, gc_account_tree_node anode)
 	{
 		topnode = anode;
-		anode.transsplits = new gc_transsplits();
+		//anode.transsplits = new gc_transsplits();
 	}
 
 	public void getAllChildren(gc_account_tree_node thisnode)
@@ -31,15 +31,15 @@ public class gc_account_tree_walker
 		} else
 		{
 			gc_account childaccount = thisnode.account;
-			thisnode.transsplits = new gc_transsplits(childaccount);
+			//thisnode.transsplits = new gc_transsplits(childaccount);
 			gc_account_tree_node pnode = thisnode.parent;
 			while (pnode != null)
 			{
-				if (pnode.transsplits == null)
+			/*	if (pnode.transsplits == null)
 				{
 					pnode.transsplits = new gc_transsplits();
 				}
-				pnode.transsplits.add(thisnode.transsplits);
+				pnode.transsplits.add(thisnode.transsplits);*/
 				pnode = pnode.parent;
 			}
 		}
@@ -50,65 +50,61 @@ public class gc_account_tree_walker
 
 		if (thisnode.children.size() > 0)
 		{
-			thisnode.transsplits = thisnode.transsplits.sortTransplits();
+			//thisnode.transsplits = thisnode.transsplits.sortTransplits();
 			for (gc_account_tree_node next : thisnode.children)
 			{
 				this.sortAllChildren(next);
 			}
 		} else
 		{
-			thisnode.transsplits = thisnode.transsplits.sortTransplits();
+			//thisnode.transsplits = thisnode.transsplits.sortTransplits();
 		}
 	}
 
 	public void totalTransfers(gc_account_tree_node thisnode)
 	{
-
+		float totalin = 0.0f;
+		float totalout = 0.0f;
+		float closing_balance = 0.0f;
+		float opening_balance = 0.0f;
+		if(thisnode.account.getName().equalsIgnoreCase("income"))
+		{
+			System.out.println(" ");
+		}
 		if (thisnode.children.size() > 0)
 		{
-			float totalin = 0.0f;
-			float totalout = 0.0f;
 			for (gc_account_tree_node next : thisnode.children)
 			{
-				totalTransfers(next);
-				totalin += next.transsplits.getTotalin();
-				totalout += next.transsplits.getTotalout();
+				totalTransfers(next);		
+				totalin += next.account.transactions.getTotalin();
+				totalout += next.account.transactions.getTotalout();
+				opening_balance += next.account.transactions.getOpening_balance();			
 			}
-			thisnode.getTranssplits().setTotalin(totalin);
-			thisnode.getTranssplits().setTotalout(totalout);
+			thisnode.account.transactions.setTotalin(totalin);
+			thisnode.account.transactions.setTotalout(totalout);
+			thisnode.account.transactions.setOpening_balance(opening_balance);
 		} else
-		{
-
-			float totalin = 0.0f;
-			float totalout = 0.0f;
-
-			for (gc_transsplit nextts : thisnode.transsplits)
-			{
-				if (nextts != null)
-				{
-
-					if (nextts.Value_number > 0)
-					{
-						totalin += ((float) nextts.Value_number) / nextts.Value_denom;
-					} else
-					{
-						totalout += ((float) nextts.Value_number) / nextts.Value_denom;
-					}
-				}
-
-			}
-			thisnode.transsplits.setTotalin(totalin);
-			thisnode.transsplits.setTotalin(totalout);
-			// closing_balance -= totalout;
+		{		
+            thisnode.account.transactions.totalTransfers();
 		}
-
 	}
 
+	
+	
+	
+	
 	public String printAllChildren(gc_account_tree_node thisnode)
 	{
 		String output = "";
         gc_account thisacc = thisnode.account;
+        if(!(thisnode.account.transactions.isNull())) 
+        	{
         output += "\n"+thisacc.heading();
+        output += "   Opening Balance: " + thisnode.account.transactions.getOpening_balance();
+        output += " Income: "+thisnode.account.transactions.getTotalin();
+        output += " Expense: "+thisnode.account.transactions.getTotalout()+"\n\n";
+       // output += " Balance: "+thisnode.transsplits.getClosing_balance()+"\n\n";
+        	}
 		if (thisnode.children.size() > 0)
 		{
 			for (gc_account_tree_node next : thisnode.children)
@@ -118,7 +114,7 @@ public class gc_account_tree_walker
 		} else
 		{
 			gc_account childaccount = thisnode.account;
-			output += thisnode.transsplits.toString();
+			output += thisnode.account.transactions.toString();
 			return output;
 		}
 		return output;
@@ -138,7 +134,7 @@ public class gc_account_tree_walker
 		} else
 		{
 			gc_account childaccount = thisnode.account;
-			output += thisnode.transsplits.toCSV();
+			output += thisnode.account.transactions.toCSV();
 			return output;
 		}
 		return output;

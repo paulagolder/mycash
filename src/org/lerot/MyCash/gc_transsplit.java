@@ -22,37 +22,78 @@ public class gc_transsplit
 	protected String Action;
 	protected Boolean Reconcile_state;
 	protected String Reconcile_date;
-	protected int Value_number;
-	protected int Value_denom;
-	protected int Quantity_number;
-	protected int Quantity_denom;
+	protected float Value;
+	protected float Quantity;
 	protected String Lot_ID;
 	private String account_name;
+	
 
-	public gc_transsplit(String txid, String splitid)
+
+	
+	private void setQuantity(float quantity)
 	{
-			gc_transaction atrans = MyCash_gui.MyTransactions.get(txid);
-			gc_split asplit = MyCash_gui.MySplits.get(splitid);
-			setTransactionID(tx_id);
-			setCurrency_ID(atrans.Currency_ID);
-			setNumber(atrans.Num);
-			setPost_date(atrans.Post_date);
-			setEnter_date(atrans.Enter_date);
-			setDescription(atrans.Description);
-			setSplit_ID(asplit.Split_ID);
-			setTx_ID(asplit.Tx_ID);
-			setAccount_ID(asplit.Account_ID);
-			setMemo(asplit.getMemo());
-			setAction(asplit.Action);
-			setReconcile_state(asplit.Reconcile_date);
-			setReconcile_date(asplit.Reconcile_date);
-			setValue_number(asplit.Value_number);
-			setValue_denom(asplit.Value_denom);
-			setQuantity_number(asplit.Quantity_number);
-			setQuantity_denom(asplit.Quantity_denom);;
-			setLot_ID(asplit.Lot_ID);
-			 String dfd = MyCash_gui.MyAccounts.get(getAccount_ID()).getName();
-			 setAccount_name(dfd);
+		// TODO Auto-generated method stub
+		
+	}
+
+	public gc_transsplit(ResultSet resset)
+	{
+			try
+			{
+				String text = resset.getString("guid");
+				setTransactionID(text);
+				text = resset.getString("currency_guid");
+				setCurrency_ID(text);
+				text = resset.getString("num");
+				setNumber(text);
+				text = resset.getString("post_date");
+				setPost_date(text);
+				text = resset.getString("enter_date");
+				setEnter_date(text);
+				text = resset.getString("description");
+				setDescription(text);
+				text = resset.getString("guid");
+				setSplit_ID(text);
+				text = resset.getString("tx_guid");
+				setTx_ID(text);
+				text = resset.getString("account_guid");
+				setAccount_ID(text);
+				text = resset.getString("memo");
+				setMemo(text);
+				text = resset.getString("action");
+				setAction(text);
+				text = resset.getString("reconcile_state");
+				setReconcile_state(text);
+				text = resset.getString("reconcile_date");
+				setReconcile_date(text);
+				String Value_number = resset.getString("value_num");	
+				String Value_denom = resset.getString("value_denom");;
+				String Quantity_number = resset.getString("quantity_num");
+				String Quantity_denom = resset.getString("quantity_denom");
+				text = resset.getString("lot_guid");
+				setLot_ID(text);			
+				float txvalue = (float) Float.parseFloat(Value_number)/Float.parseFloat(Value_denom);
+				setValue( (float) ((Math.round(txvalue * 100.0)) / 100.0));
+				float txquantity = (float) Float.parseFloat(Quantity_number)/Float.parseFloat(Quantity_denom);
+				setQuantity( (float) ((Math.round(txquantity * 100.0)) / 100.0));
+				 String dfd = MyCash_gui.MyAccounts.get(getAccount_ID()).getName();
+				 setAccount_name(dfd);
+			} catch (SQLException e)
+			{
+
+				e.printStackTrace();
+			}
+		
+			
+		
+		
+	}
+
+
+
+	private void setValue(float dbl)
+	{
+		Value = dbl;
 		
 	}
 
@@ -93,7 +134,6 @@ public class gc_transsplit
 
 	private String getFull_Account_Name()
 	{
-		// TODO Auto-generated method stub
 		return " FAC ";
 	}
 
@@ -128,15 +168,7 @@ public class gc_transsplit
 		return Post_date.substring(0, 10);
 	}
 
-	public int getQuantity_denom()
-	{
-		return Quantity_denom;
-	}
 
-	public int getQuantity_number()
-	{
-		return Quantity_number;
-	}
 
 	public String getReconcile_date()
 	{
@@ -163,15 +195,7 @@ public class gc_transsplit
 		return tx_id;
 	}
 
-	public int getValue_denom()
-	{
-		return Value_denom;
-	}
 
-	public int getValue_number()
-	{
-		return Value_number;
-	}
 
 	public void logtoconsol()
 	{
@@ -179,11 +203,16 @@ public class gc_transsplit
 	
 		output += ("  " + getPost_date_short() + " " + getDescription() + " :" + getNumber() + " ");
 
-		float value = (float) getValue_number() / getValue_denom();
+		float value = (float) getValue() ;
 		String vf = String.format("%8.2f", value);
 		output += ("        Transfer++ £" + vf + " from:" + getAccount_name()
 				+ " to:" + " " + getMemo() + " " + getAction() + " " + "\n");
 		MyCash_gui.outputpanel.append(output);
+	}
+
+	float getValue()
+	{
+		return Value;
 	}
 
 	public void setAccount_ID(String account_ID)
@@ -241,15 +270,7 @@ public class gc_transsplit
 		Post_date = post_date;
 	}
 
-	public void setQuantity_denom(int quantity_denom)
-	{
-		Quantity_denom = quantity_denom;
-	}
-
-	public void setQuantity_number(int quantity_number)
-	{
-		Quantity_number = quantity_number;
-	}
+	
 
 	public void setReconcile_date(String reconcile_date)
 	{
@@ -284,15 +305,7 @@ public class gc_transsplit
 		tx_id = text;
 	}
 
-	public void setValue_denom(int value_denom)
-	{
-		Value_denom = value_denom;
-	}
 
-	public void setValue_number(int value_number)
-	{
-		Value_number = value_number;
-	}
 
 	public String toCSV()
 	{
@@ -303,7 +316,7 @@ public class gc_transsplit
 		String direction = "";
 		String svalue = "";
 
-		float value = (float) getValue_number() / getValue_denom();
+		float value = (float) getValue() ;
 		String vf = String.format("%8.2f", Math.abs(value)).trim();
 	
 		if (value > 0)
@@ -337,7 +350,7 @@ public class gc_transsplit
 		String direction = "";
 		String svalue = "";
 
-		float value = (float) getValue_number() / getValue_denom();
+		float value = (float) getValue() ;
 		String vf = String.format("%8.2f", Math.abs(value));
 		// output += " Transfer+ ";
 		svalue = "£" + utils.rightpad(8, vf);
@@ -359,7 +372,7 @@ public class gc_transsplit
 		}
 
 		sdescription = utils.leftpad(60, sdescription);
-		output += date + sdescription + snum + "Transfer:" + svalue + direction + "\n";
+		output += date + sdescription + snum + "zzTransfer:" + svalue + direction + "\n";
 		return output;
 	}
 

@@ -3,6 +3,7 @@ package org.lerot.MyCash;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,18 +13,69 @@ public class gc_transactions extends LinkedHashMap<String, gc_transaction>
 {
 
 	private static final long serialVersionUID = 1L;
+	
+	private float totalin = 0.0f;
+	private float totalout = 0.0f;
+	private float opening_balance = 0.0f;
 
+	
 	public gc_transactions(gc_account gcaccount)
 	{
-        gc_splits splits = new gc_splits(gcaccount.getName());
-        
-		String query = "select * from splits s where s.tx_guid =\""+ gcaccount.getAccount_id()+"\" ";
+		System.out.println(" haer 13 ");
+		String query = "select t.guid  from splits s , transactions t where s.tx_id = t.guid and s.tx_guid =\""+ gcaccount.getAccount_id()+"\" ";
+	
 		PreparedStatement st= null;
 		ResultSet resset = null;
 		Connection con = null;
+		try
+		{
+			con = utils.myconnect();
+			st = con.prepareStatement(query);
+			resset = st.executeQuery();
+			while (resset.next())
+			{  
+				 	String TransactionID = resset.getString("guid");
+					gc_transaction transaction = gc_transaction.getTransaction(TransactionID);				
+			}
+			
+		} catch (Exception e)
+		{
+			System.out.println(e);
+		}finally {
+		    try { 
+		    	resset.close(); 
+		    st.close(); 
+		     con.close(); } catch (Exception e) { /* Ignored */ }
+		}
+		
+	}
 
-		int n = 0;
+	public gc_transactions()
+	{
+		totalin = 0.0f;
+		totalout = 0.0f;
+		 opening_balance = 0.0f;
+	}
+	
+	public static gc_transactions gettransactions(String code)
+	{
+		gc_transactions trans = new gc_transactions();
+		String query = "";
+		if (code == null || code == "")
+		{
+			query = "SELECT t.*  ";
+			query += " FROM  transactions t , splits s , accounts a WHERE t.guid = s.tx_guid and s.account_guid = a.guid and a.account_type = \"EXPENSE\" and ( t.num = \"\" or t.num is null ) order by t.post_date ";
 
+		} else
+		{
+			query = "SELECT t.* ";
+			query += " FROM  transactions t WHERE  t.num = \"" + code
+					+ "\"  order by t.post_date ";
+		}
+
+		PreparedStatement st = null;
+		ResultSet resset = null;
+		Connection con = null;
 		try
 		{
 			con = utils.myconnect();
@@ -31,35 +83,29 @@ public class gc_transactions extends LinkedHashMap<String, gc_transaction>
 			resset = st.executeQuery();
 			while (resset.next())
 			{
-				
-					gc_split asplit = new gc_split(resset);
-					splits.put(asplit.Split_ID, asplit)	;	
-					n=n+1;			
+				 gc_transaction atrans = new gc_transaction(resset);
+				 atrans.getEntries();
+				 atrans.totalTransfers();
+				{				
+					trans.put(atrans.TransactionID, atrans);
+				}
 			}
-			
 		} catch (Exception e)
 		{
 			System.out.println(e);
-		}finally {
-		    try { resset.close(); } catch (Exception e) { /* Ignored */ }
-		    try { st.close(); } catch (Exception e) { /* Ignored */ }
-		    try { con.close(); } catch (Exception e) { /* Ignored */ }
-		}
-		
-		for(java.util.Map.Entry<String, gc_split> next  : splits.entrySet())
+		} finally
 		{
-			gc_split asplit = next.getValue();
-			gc_transaction atrans = MyCash_gui.MyTransactions.get(asplit.Tx_ID);
-			put(atrans.TransactionID,atrans);
+			try
+			{
+				resset.close();
+				st.close();
+				con.close();
+			} catch (Exception e)
+			{
+			}
 		}
-		
-		
-	
-	}
-
-	public gc_transactions()
-	{
-		// TODO Auto-generated constructor stub
+       
+		return trans;
 	}
 
 	public void add(gc_transactions transactions)
@@ -74,14 +120,11 @@ public class gc_transactions extends LinkedHashMap<String, gc_transaction>
 	
 	public void getTransactions()
 	{
-
+		System.out.println(" haer 15 ");
 		String query = "select * from transactions where 1 order by guid ";
 		PreparedStatement st= null;
 		ResultSet resset = null;
 		Connection con = null;
-
-		int n = 0;
-
 		try
 		{
 			con = utils.myconnect();
@@ -90,9 +133,8 @@ public class gc_transactions extends LinkedHashMap<String, gc_transaction>
 			while (resset.next())
 			{
 				gc_transaction atrans = new gc_transaction(resset);
-				atrans.richsplits = new gc_richsplits(atrans.TransactionID);
+				atrans.getEntries();
 				put(atrans.TransactionID, atrans);
-				n = n + 1;
 			}
 		} catch (Exception e)
 		{
@@ -134,6 +176,95 @@ public class gc_transactions extends LinkedHashMap<String, gc_transaction>
 		return sorted;
 	}
 
+	public void totalTransfers()
+	{
+		 totalin = 0.0f;
+		 totalout = 0.0f;
+		 opening_balance = 0.0f;
+		for(java.util.Map.Entry<String, gc_transaction> nextt : this.entrySet())
+		{
+			gc_transaction atransaction = (gc_transaction)nextt.getValue();
+			 atransaction.totalTransfers();
+			 totalin +=  atransaction.getTotalin();
+			 totalout +=  atransaction.getTotalout();
+		     opening_balance  +=  atransaction.getOpening_balance();
+		}
+	}
+	
+	public String heading()
+	{
+		String output = "totalin ="+totalin+" totalout="+totalout;
+		return output+"\n";
+	}	
+
+	public float getTotalin()
+	{
+		return totalin;
+	}
+
+	public void setTotalin(float totalin)
+	{
+		this.totalin = totalin;
+	}
+
+	public float getTotalout()
+	{
+		return totalout;
+	}
+
+	public void setTotalout(float totalout)
+	{
+		this.totalout = totalout;
+	}
+
+	public float getOpening_balance()
+	{
+		return opening_balance;
+	}
+
+	public void setOpening_balance(float opening_balance)
+	{
+		this.opening_balance = opening_balance;
+	}
+
+	public String toCSV()
+	{
+		// paul TODO Auto-generated method stub
+		return null;
+	}
+
+	public boolean isNull()
+	{
+		if(size()>0) return false;
+		if (opening_balance > 0)
+			return false;
+		if (totalin > 0)
+			return false;
+		if (totalout > 0)
+			return false;
+		return true;
+	}
+
+	public String toTXT()
+	{
+		// TODO Auto-generated method stub
+		return " txxxxxxt ";
+	}
+
+	public String list()
+	{
+		String output ="";
+		for(java.util.Map.Entry<String, gc_transaction> nextt : this.entrySet())
+		{
+			output += ((gc_transaction)nextt.getValue()).toString();
+			 
+		}
+		return output;
+	}
+
+
+
+	
 
 	
 	

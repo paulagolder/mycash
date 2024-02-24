@@ -12,21 +12,60 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 {
 
 	private static final long serialVersionUID = 1L;
-	private float totalin;
-	private float totalout;
-	private float closing_balance;
+	
 
 	public gc_transsplits()
 	{
-		
+
 	}
-	
+
+	public gc_transsplits(gc_transaction transaction)
+	{
+
+		String query = "SELECT *  ";
+		query += " FROM splits s , transactions t WHERE s.tx_guid = t.guid   and t.guid = \""
+				+ transaction.getTransactionID() + "\"  order by t.post_date ";
+		PreparedStatement st = null;
+		ResultSet resset = null;
+		Connection con = null;
+
+		int n = 0;
+
+		try
+		{
+			con = utils.myconnect();
+			st = con.prepareStatement(query);
+			resset = st.executeQuery();
+			while (resset.next())
+			{
+				gc_transsplit atranssplit = new gc_transsplit(resset);
+				add(atranssplit);
+				n = n + 1;
+			}
+		} catch (Exception e)
+		{
+			System.out.println(e);
+		} finally
+		{
+			try
+			{
+				resset.close();
+				st.close();
+				con.close();
+			} catch (Exception e)
+			{
+			}
+		}
+
+	}
 
 	public gc_transsplits(gc_account gcaccount)
 	{
 
-		String query = "SELECT s1.guid as split1id, t.guid as txid ,s2.guid as split2id ";
-		query += " FROM splits s1 , splits s2, transactions t WHERE s1.tx_guid = t.guid  and s2.tx_guid = s1.tx_guid and s1.account_guid != s2.account_guid and s1.account_guid = \""
+		// String query = "SELECT s1.guid as split1id, t.guid as txid ";
+
+		String query = "SELECT *  ";
+		query += " FROM splits s1 , transactions t WHERE s1.tx_guid = t.guid   and s1.account_guid = \""
 				+ gcaccount.getAccount_id() + "\"  order by t.post_date ";
 
 		PreparedStatement st = null;
@@ -42,11 +81,10 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 			resset = st.executeQuery();
 			while (resset.next())
 			{
-				String txid = resset.getString("txid");
+				// String txid = resset.getString("txid");
 
-				String split1id = resset.getString("split1id");
-				String split2id = resset.getString("split2id");
-				gc_transsplit atranssplit = new gc_transsplit(txid, split2id);
+				// String split1id = resset.getString("split1id");
+				gc_transsplit atranssplit = new gc_transsplit(resset);
 				add(atranssplit);
 				n = n + 1;
 			}
@@ -58,21 +96,11 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 			try
 			{
 				resset.close();
-			} catch (Exception e)
-			{
-			/* Ignored */ }
-			try
-			{
 				st.close();
-			} catch (Exception e)
-			{
-			/* Ignored */ }
-			try
-			{
 				con.close();
 			} catch (Exception e)
 			{
-			/* Ignored */ }
+			}
 		}
 	}
 
@@ -81,12 +109,12 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 		String query = "";
 		if (code == null || code == "")
 		{
-			query = "SELECT s.guid as split1id, t.guid as txid  ";
+			query = "SELECT *  ";
 			query += " FROM splits s , transactions t WHERE s.tx_guid = t.guid  and ( t.num = \"\" or t.num is null ) order by t.post_date ";
 
 		} else
 		{
-			query = "SELECT s.guid as split1id, t.guid as txid  ";
+			query = "SELECT * ";
 			query += " FROM splits s , transactions t WHERE s.tx_guid = t.guid  and t.num = \"" + code
 					+ "\"  order by t.post_date ";
 		}
@@ -102,13 +130,15 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 			resset = st.executeQuery();
 			while (resset.next())
 			{
-				String txid = resset.getString("txid");
-				String split1id = resset.getString("split1id");
-				gc_split split = MyCash_gui.MySplits.get(split1id);
-				gc_account account = MyCash_gui.MyAccounts.get(split.Account_ID);
+				// String txid = resset.getString("txid");
+				// String split1id = resset.getString("split1id");
+				// gc_split split = MyCash_gui.MySplits.get(split1id);
+
+				String Account_ID = resset.getString("account_guid");
+				gc_account account = MyCash_gui.MyAccounts.get(Account_ID);
 				if (account.getAccount_type().equalsIgnoreCase("Expense"))
 				{
-					gc_transsplit atranssplit = new gc_transsplit(txid, split1id);
+					gc_transsplit atranssplit = new gc_transsplit(resset);
 					add(atranssplit);
 					n = n + 1;
 				}
@@ -121,21 +151,11 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 			try
 			{
 				resset.close();
-			} catch (Exception e)
-			{
-			/* Ignored */ }
-			try
-			{
 				st.close();
-			} catch (Exception e)
-			{
-			/* Ignored */ }
-			try
-			{
 				con.close();
 			} catch (Exception e)
 			{
-			/* Ignored */ }
+			}
 		}
 	}
 
@@ -150,45 +170,17 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 	public String footing()
 	{
 		String outline = "\n";
-		outline += "  closing balance =" + closing_balance + "\n";
 		return outline;
 	}
 
-	public float getClosing_balance()
-	{
-		return closing_balance;
-	}
-
-	public float getTotalin()
-	{
-		return totalin;
-	}
-
-	public float getTotalout()
-	{
-		return totalout;
-	}
+	
 
 	public String heading()
 	{
-		String outline = "  total receipts =" + totalin + " total dispenses =" + totalout + "\n\n";
-		return outline;
+				return " FRED" ;
 	}
 
-	public void setClosing_balance(float closing_balance)
-	{
-		this.closing_balance = closing_balance;
-	}
-
-	public void setTotalin(float totalin)
-	{
-		this.totalin = totalin;
-	}
-
-	public void setTotalout(float totalout)
-	{
-		this.totalout = totalout;
-	}
+	
 
 	public gc_transsplits sortTransplits()
 	{
@@ -231,27 +223,9 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 		return outstring;
 	}
 
-	public void totalTransfers()
-	{
-		totalin = 0.0f;
-		totalout = 0.0f;
+	
 
-		for (gc_transsplit nextts : this)
-		{
-			if (nextts != null)
-			{
-				if (nextts.Value_number > 0)
-				{
-					totalin += ((float) nextts.Value_number) / nextts.Value_denom;
-				} else
-				{
-					totalout += ((float) nextts.Value_number) / nextts.Value_denom;
-				}
-			}
-		}
-		closing_balance -= totalout;
-	}
-
+	
 
 	public String toTXT()
 	{
@@ -262,5 +236,7 @@ public class gc_transsplits extends ArrayList<gc_transsplit>
 		}
 		return outstring;
 	}
+
+	
 
 }

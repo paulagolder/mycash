@@ -15,7 +15,8 @@ public class mb_account
 
 	private String name;
 	private String code;
-	gc_transsplits transsplits;
+	gc_transactions transactions;
+
 	private float opening_balance;
 	private String description;
 	private float totalin;
@@ -41,15 +42,15 @@ public class mb_account
 					opening_balance = newtrans.getValue();
 				}
 			}
-			transsplits = new gc_transsplits(code);
-		    totalTransfers();
-			closing_balance = opening_balance + totalin - totalout ;;
+			transactions = gc_transactions.gettransactions(code);
+			totalTransfers();
+			closing_balance = opening_balance + totalin - totalout;
 		} else
 		{
 			name = "Unallocated ";
 			code = null;
 			description = "Un-budgeted expenditure";
-			transsplits = new gc_transsplits("");
+			transactions = gc_transactions.gettransactions("");
 			opening_balance = 0;
 			closing_balance = 0;
 		}
@@ -73,16 +74,6 @@ public class mb_account
 	public void setCode(String code)
 	{
 		this.code = code;
-	}
-
-	public gc_transsplits getTranssplits()
-	{
-		return transsplits;
-	}
-
-	public void setTranssplits(gc_transsplits transsplits)
-	{
-		this.transsplits = transsplits;
 	}
 
 	public float getOpening_balance()
@@ -164,30 +155,30 @@ public class mb_account
 		return outline;
 	}
 
-	public String listTranssplits()
+	public String listTransactions()
 	{
 
 		String output = "";
-		if (transsplits == null)
+		if (transactions == null)
 		{
 			output += " no transsplits for " + this.name + "\n";
 
-		} else if (transsplits.size() < 0)
+		} else if (transactions.size() < 1)
 		{
 			output += " no transsplits 2 " + "\n";
 
 		} else
 		{
-			for (gc_transsplit nextts : transsplits)
+			for (Entry<String, gc_transaction> nextts : transactions.entrySet())
 			{
 				if (nextts == null)
 				{
 					output += " no transsplit 3" + "\n";
 				} else
 				{
-					if (nextts.Value_number > 0)
+					if (((gc_transaction) nextts.getValue()).getTotalin() > 0)
 					{
-						output += nextts.toString();
+						output += ((gc_transaction) nextts.getValue()).toString();
 					}
 				}
 			}
@@ -219,32 +210,30 @@ public class mb_account
 
 		}
 
-		for (gc_transsplit nextts : transsplits)
+		for (Entry<String, gc_transaction> nextts : transactions.entrySet())
 		{
 			if (nextts != null)
 			{
-
-				if (nextts.Value_number < 0)
-				{
-					totalin += ((float) nextts.Value_number) / nextts.Value_denom;
-				} else
-				{
-					totalout += ((float) nextts.Value_number) / nextts.Value_denom;
-				}
+				totalin += ((float) nextts.getValue().getTotalin());
+				totalout += ((float) nextts.getValue().getTotalout());
 			}
 		}
 	}
 
 	public String printdetail()
 	{
-		String output = "";
+		String output = "\n";
 		output += name + " " + getDescription() + " ";
-		output += accountrowToTXT();
+		output += accountrowToTXT()+"\n";
 		for (mb_transfer atran : transfers)
 		{
 			output += " " + atran.print() + "\n";
 		}
-		output += this.listTranssplits();
+		for (Entry<String, gc_transaction> nextt : transactions.entrySet())
+		{
+			output +=  ((gc_transaction) nextt.getValue()).toString() ;
+		}
+
 		return output;
 	}
 
@@ -257,32 +246,31 @@ public class mb_account
 		{
 			output += " " + atran.printCSV() + "\n";
 		}
-		output += this.listTranssplits();
+		output += this.listTransactions();
 		return output;
 	}
-	
-	
+
 	public String toTxt()
 	{
 		String output = "";
-		if (transsplits == null)
+		if (transactions == null)
 		{
 			output += " no transsplits for " + this.name + "\n";
 
-		} else if (transsplits.size() < 0)
+		} else if (transactions.size() < 0)
 		{
 			output += " no transsplits 2 " + "\n";
 
 		} else
 		{
-			for (gc_transsplit nextts : transsplits)
+			for (Entry<String, gc_transaction> nextts : transactions.entrySet())
 			{
 				if (nextts == null)
 				{
 					output += " no transsplit 3" + "\n";
 				} else
 				{
-					if (nextts.Value_number > 0)
+					if (nextts.getValue().getTotalin() > 0)
 					{
 						output += nextts.toString();
 					}
@@ -291,46 +279,44 @@ public class mb_account
 		}
 		return output;
 	}
-	
+
 	public String toCsv()
 	{
 		String output = "";
-		if (transsplits == null)
+		if (transactions == null)
 		{
 			return " No transactions ";
 
-		} else if (transsplits.size() < 0)
+		} else if (transactions.size() < 0)
 		{
 			return " No transactions ";
 
 		} else
 		{
-			for (gc_transsplit nextts : transsplits)
+			for (Entry<String, gc_transaction> nextts : transactions.entrySet())
 			{
 				if (nextts == null)
 				{
-					//return null;
+					// return null;
 				} else
 				{
-					if (nextts.Value_number > 0)
+					if (nextts.getValue().getTotalin() > 0)
 					{
-						output += nextts.toCSV();
+						output += nextts.getValue().toCSV();
 					}
 				}
 			}
 			return output;
 		}
-	
+
 	}
 
 	public String accountrowToCSV()
 	{
-			String outline = code+", "+name+", "+opening_balance+", " +totalin+", "+totalout+", "+closing_balance + "\n";
-			return outline;
-		
+		String outline = code + ", " + name + ", " + opening_balance + ", " + totalin + ", " + totalout + ", "
+				+ closing_balance + "\n";
+		return outline;
+
 	}
-
-	
-
 
 }

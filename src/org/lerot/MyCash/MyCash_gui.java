@@ -42,7 +42,6 @@ public class MyCash_gui extends JFrame
 	public static boolean showborders = false;
 	public static String storepath;
 
-	public static gc_splits MySplits;
 	public static gc_transactions MyTransactions;
 	public static gc_accounts MyAccounts;
 	public static gc_account topaccount;

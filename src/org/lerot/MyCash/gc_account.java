@@ -1,18 +1,7 @@
 package org.lerot.MyCash;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.swing.tree.TreeNode;
 
 public class gc_account
 {
@@ -26,9 +15,19 @@ public class gc_account
 	private String description;
 	private String parent_name;
 	private boolean isExpense;
-	private float opening_balance;
+	// private float opening_balance;
 
+	protected gc_transactions transactions;
 
+	public gc_transactions getTransactions()
+	{
+		return transactions;
+	}
+
+	public void setTransactions(gc_transactions transactions)
+	{
+		this.transactions = transactions;
+	}
 
 	public String getName()
 	{
@@ -129,11 +128,13 @@ public class gc_account
 			setParent_id(text);
 			text = resset.getString("description");
 			setDescription(text);
+			transactions = new gc_transactions();;
+			
 		} catch (SQLException e)
 		{
 			e.printStackTrace();
 		}
-	
+
 	}
 
 	public gc_account(String text)
@@ -162,12 +163,11 @@ public class gc_account
 		return true;
 	}
 
-
 	public String heading()
 	{
-        String outline = name + " " +  description + "\n\n";
-     
-        return outline;
+		String outline = name + " " + description + " "+ transactions.heading()+"\n";
+
+		return outline;
 	}
 
 	public boolean isExpense()
@@ -180,20 +180,16 @@ public class gc_account
 		this.isExpense = bool;
 	}
 
-	
-	
+	public String listTransactions()
+	{
+		String outline ="";
+		if(!transactions.isNull())
+		{
+			outline += " what ever ";
+		}
+		
+		outline += transactions.list();
+		return outline;
 	}
-	
-	
 
-	
-
-	
-
-	
-
-	
-	
-
-
-
+}

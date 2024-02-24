@@ -1,4 +1,4 @@
-package org.lerot.MyCash;
+package org.lerot.MyCash.layout;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

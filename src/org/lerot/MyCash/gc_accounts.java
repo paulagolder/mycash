@@ -19,6 +19,7 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 
 	public void getAccounts()
 	{
+		System.out.println(" haer 14 ");
 		java.lang.String query = "select * from accounts where 1 order by guid ";
 		PreparedStatement st = null;
 		ResultSet resset = null;
@@ -34,12 +35,29 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 			while (resset.next())
 			{
 				gc_account anaccount = new gc_account(resset);
-				if(anaccount.getAccount_id().equalsIgnoreCase ("27cf363fdb0440d7ac18f41f7b74893e"))
+				if (anaccount == null)
+				{
+					System.out.println(" help ");
+				} else if (anaccount.getAccount_type().equalsIgnoreCase("Template Root"))
 				{
 					System.out.println("here");
+				} //else if (anaccount.getAccount_type().equalsIgnoreCase("Equity"))
+				//{
+
+				//}
+			else if (anaccount.getName().toLowerCase().contains("orphan"))
+				{
+
+				} else if (anaccount.getName().toLowerCase().contains("imbalance"))
+				{
+
+				} else
+				{
+					anaccount.setTransactions(getTransactions(anaccount));
+					put(anaccount.getAccount_id(), anaccount);
+					
+					n = n + 1;
 				}
-				put(anaccount.getAccount_id(), anaccount);
-				n = n + 1;
 			}
 		} catch (Exception e)
 		{
@@ -49,21 +67,11 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 			try
 			{
 				resset.close();
-			} catch (Exception e)
-			{
-				/* Ignored */ }
-			try
-			{
 				st.close();
-			} catch (Exception e)
-			{
-				/* Ignored */ }
-			try
-			{
 				con.close();
 			} catch (Exception e)
 			{
-				/* Ignored */ }
+			}
 		}
 
 		for (Entry<String, gc_account> entry : this.entrySet())
@@ -116,7 +124,7 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 		for (Entry<String, gc_account> entry : this.entrySet())
 		{
 			gc_account anaccount = entry.getValue();
-			if (anaccount.getParent_id() == null && anaccount.getName().equalsIgnoreCase ("Root Account") )
+			if (anaccount.getParent_id() == null && anaccount.getName().equalsIgnoreCase("Root Account"))
 			{
 				return anaccount;
 			}
@@ -128,5 +136,66 @@ public class gc_accounts extends LinkedHashMap<String, gc_account>
 	{
 		return this.indexOf(ch);
 	}
+	
+	public gc_transactions getTransactions(gc_account gcaccount)
+	{
+		
+		gc_transactions transaction_list = new gc_transactions();
+
+		String query = "SELECT  s.tx_guid  ";
+		query += " FROM splits s WHERE   s.account_guid = \""
+				+ gcaccount.getAccount_id() + "\"  ";
+
+		PreparedStatement st = null;
+		ResultSet resset = null;
+		Connection con = null;
+
+		int n = 0;
+		try
+		{
+			con = utils.myconnect();
+			st = con.prepareStatement(query);
+			resset = st.executeQuery();
+			while (resset.next())
+			{
+	            String txid = resset.getString("tx_guid");
+				gc_transaction atransaction = gc_transaction.getTransaction(txid);
+				transaction_list.put(atransaction.TransactionID,atransaction);
+				n = n + 1;
+			}
+		} catch (Exception e)
+		{
+			System.out.println(e);
+		} finally
+		{
+			try
+			{
+				resset.close();
+				st.close();
+				con.close();
+			} catch (Exception e)
+			{
+			}
+		}
+		//System.out.println(" transactions found "+transaction_list.size());
+		return transaction_list;
+	}
+
+	public void getEntries()
+	{
+		for( java.util.Map.Entry<String, gc_account>  next : this.entrySet())
+		{
+			
+			gc_account anaccount = next.getValue();
+			gc_transactions transactions = anaccount.getTransactions();
+			for( java.util.Map.Entry<String, gc_transaction> nextt: transactions.entrySet())
+			{
+				nextt.getValue().getEntries();
+			}
+			
+		}
+		
+	}
+
 
 }

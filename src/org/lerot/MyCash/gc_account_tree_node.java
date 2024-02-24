@@ -14,14 +14,13 @@ public class gc_account_tree_node
 	gc_account account;
 	List<gc_account_tree_node> children;
 	gc_account_tree_node parent;
-	gc_transsplits transsplits;
+
 
 	public gc_account_tree_node(String name, gc_account topaccount)
 	{
-
 		account = topaccount;
 		parent = null;
-		transsplits = new gc_transsplits();
+		//account.transactions = new gc_account.transactions();
 		children = new ArrayList<gc_account_tree_node>();
 		gc_accounts childaccounts = MyCash_gui.MyAccounts.getChildrenArray(topaccount);
 		if (childaccounts.size() > 0)
@@ -31,7 +30,6 @@ public class gc_account_tree_node
 				children.add(new gc_account_tree_node(this, next.getValue()));
 			}
 		}
-
 	}
 
 	public gc_account_tree_node(gc_account_tree_node aparent, gc_account childaccount)
@@ -43,16 +41,11 @@ public class gc_account_tree_node
 		gc_accounts grandchildaccounts = MyCash_gui.MyAccounts.getChildrenArray(childaccount);
 		if (grandchildaccounts.size() > 0)
 		{
-			transsplits = new gc_transsplits();
 			for (Entry<String, gc_account> next : grandchildaccounts.entrySet())
 			{
 				children.add(new gc_account_tree_node(this, next.getValue()));
 			}
-		} else
-		{
-			// transactions = makeTransactions(account);
-			transsplits = new gc_transsplits(account);
-		}
+		} 
 
 	}
 
@@ -101,30 +94,33 @@ public class gc_account_tree_node
 		return children;
 	}
 
-	gc_transsplits getTranssplits()
-	{
-		return transsplits;
-	}
+	
 
 	public String printSummary()
 	{
 		String output = " ";
-		float totin = transsplits.getTotalin();
+		float totin = account.transactions.getTotalin();
 		String vi = String.format("%8.2f", totin);
-		float totout = transsplits.getTotalout();
+		float totout = account.transactions.getTotalout();
 		String vo = String.format("%8.2f", totout);
+		float open = account.transactions.getOpening_balance();
+		float close = 1234f;
+		String  vopen =  String.format("%8.2f", open);
+		String  vclose =  String.format("%8.2f",close);
 
 		output += utils.leftpad(40, account.getName());
+		output += utils.rightpad(10, vopen);
 		output += utils.rightpad(10, vi);
 		output += utils.rightpad(10, vo);
+		output += utils.rightpad(10, vclose);
 		return output + "\n";
 	}
 
 	public String printIncomeSummary()
 	{
 		String output = " ";
-		float totin = transsplits.getTotalin();
-		float totout = transsplits.getTotalout();
+		float totin = account.transactions.getTotalin();
+		float totout = account.transactions.getTotalout();
 		String vt =  String.format("%8.2f", totout+totin);
 		output += utils.leftpad(40, account.getName());
 		output += utils.rightpad(10,vt );
@@ -134,9 +130,12 @@ public class gc_account_tree_node
 	public String printOpeningSummary()
 	{
 		String output = " ";
-		float totin = transsplits.getTotalin();
-		float totout = transsplits.getTotalout();
-		String vt =  String.format("%8.2f", totout+totin);
+		float totin = account.transactions.getTotalin();
+		float totout = account.transactions.getTotalout();
+		float open = account.transactions.getOpening_balance();
+		float close = 1234f;
+
+		String vt =  String.format("%8.2f", open);
 		output += utils.leftpad(40, "Opening Balances");
 		output += utils.rightpad(10,vt );
 		return output + "\n";
@@ -145,9 +144,10 @@ public class gc_account_tree_node
 	public String printAssetsSummary()
 	{
 		String output = " ";
-		float totin = transsplits.getTotalin();
-		float totout = transsplits.getTotalout();
-		String vt =  String.format("%8.2f", -(totout+totin));
+		float totin = account.transactions.getTotalin();
+		float totout = account.transactions.getTotalout();
+		float close = 1234f;
+		String vt =  String.format("%8.2f", close);
 		output += utils.leftpad(40, "Assets");
 		output += utils.rightpad(10,vt );
 		return output + "\n";
@@ -155,15 +155,35 @@ public class gc_account_tree_node
 	
 	public gc_account_tree_node getnode(String name)
 	{
-		
 		for (gc_account_tree_node achild : children)
-		{
-			
+		{	
 			if (achild.account.getName().startsWith(name))
 				return achild;
 		}
 		return null;
 	}
+
+	public gc_transactions collectTransactions()
+	{
+		gc_transactions  transactionlist = new gc_transactions();	
+		if(children.isEmpty())
+		{
+			return account.transactions;
+		}
+		else
+		{
+		for (gc_account_tree_node achild : children)
+		{
+			gc_transactions trans = achild.collectTransactions();
+			
+    		transactionlist.add(trans);
+		}
+		return transactionlist;
+		}
+	
+	}
+
+	
 
 	
 
