@@ -55,7 +55,7 @@ public class MyCash_gui extends JFrame
 	private static jswStyles panelstyles;;
 	static String budgetfile;
 	public static my_budgets mybudgets;
-	public static gc_transsplits MyTranssplits;
+
 	public static String mycashexport;
 	public static String dburl;
 	public static String dbuser;
